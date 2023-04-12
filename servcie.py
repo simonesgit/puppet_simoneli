@@ -189,13 +189,9 @@ def process_em_logs(raw_log_em, audit_accounts, date_from, date_to):
     logs_df.to_csv(csv_filename, index=False)
 
     return logs_df
-
-import os
-import shutil
-from datetime import datetime, timedelta
-
-def logger(loginfo):
-    print(loginfo)
+   
+def download_files(source_paths, pattern, date_from, date_to, skip_existing_files=True):
+    file_list = []
 
     for region, path in source_paths.items():
         region_files = []

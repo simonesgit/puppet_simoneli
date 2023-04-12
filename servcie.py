@@ -150,3 +150,42 @@ for info in ad_groups:
 print("\nAD groups2:")
 for info in ad_groups2:
     print(info)
+
+
+
+import io
+import bz2
+
+def process_em_logs(raw_log_em, audit_accounts, date_from, date_to):
+    # Create an empty dataframe to store the logs
+    logs_df = pd.DataFrame()
+
+    # Get the list of target accounts
+    target_accounts = [account_info['account'] for account_info in audit_accounts]
+
+    # Process each file in raw_log_em
+    for file_info in raw_log_em:
+        # Read and decode the bz2 file content with utf-8
+        with bz2.open(file_info['file'], mode='rt', encoding='utf-8') as file:
+            content = file.read()
+
+        # Replace quotes and remove spaces around '|'
+        content = content.replace('"', '').replace(' |', '|').replace('| ', '|')
+
+        # Remove lines containing only '='
+        content = '\n'.join([line for line in content.split('\n') if not set(line.strip()) == {'='}])
+
+        # Read the processed content directly into a dataframe using io.StringIO
+        file_df = pd.read_csv(io.StringIO(content), sep='|', engine='python')
+
+        # Filter the rows based on target_accounts
+        filtered_df = file_df[file_df['Username'].isin(target_accounts)]
+
+        # Append the filtered dataframe to the logs dataframe
+        logs_df = logs_df.append(filtered_df, ignore_index=True)
+
+    # Save the logs dataframe to a CSV file
+    csv_filename = f"em_audit_logs_{date_from.strftime('%Y%m%d')}_{date_to.strftime('%Y%m%d')}.csv"
+    logs_df.to_csv(csv_filename, index=False)
+
+    return logs_df

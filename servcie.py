@@ -1,37 +1,61 @@
-1.Introduction
+import os
+import shutil
+from datetime import datetime, timedelta
 
-Overview of the Control-M/Agent clusters and their purpose
-Description of the Internal K8s platform (IKP) and its role in hosting the Control-M/Agent clusters
-Architecture and Components
+# Define the source file paths
+source_files = {'hk': '\\\\server\\pathhk', 'uk': '\\\\server2\\pathuk', 'us': '\\\\server3\\pathus'}
 
-Architecture diagram of the Control-M/Agent clusters on IKP
-Explanation of key components and their functions within the architecture
-Relationship between Control-M/Agent clusters and other company applications
-2.Deployment Process
+# Define the date range
+date_from = datetime(2023, 3, 1)
+date_to = datetime(2023, 4, 1)
 
-Step-by-step guide on how to deploy Control-M/Agent clusters on IKP
-Configuration details and best practices
-3.Monitoring and Logging
+# Define the list to store the file information
+file_list = []
 
-Overview of monitoring and logging tools used with Control-M/Agent clusters and IKP
-Instructions on how to access logs and performance metrics
-Common log entries and what they indicate
-4.Troubleshooting and Issue Resolution
+# Loop through each source file path
+for region, path in source_files.items():
+    # Loop through each date in the range
+    current_date = date_from
+    while current_date <= date_to:
+        # Define the filename for the current date
+        filename = f'backup_em_audit_{current_date.strftime("%Y%m%d")}.log.bz2'
 
-List of common issues and their solutions for L1 support
-Escalation process and guidelines for L2 support
-Steps for diagnosing and resolving issues related to Control-M/Agent clusters and IKP
-5.Incident Management
+        # Define the full path to the file
+        file_path = os.path.join(path, filename)
 
-Incident management process and guidelines
-Roles and responsibilities of L1 and L2 support teams in incident management
-Communication channels and tools used during incident management
-6.Maintenance and Upgrades
+        # Check if the file exists and is a file (not a directory)
+        if os.path.isfile(file_path):
+            # Add the file information to the list
+            file_list.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': file_path})
+        
+        # Move to the next date
+        current_date += timedelta(days=1)
 
-Scheduled maintenance windows and procedures
-Process for upgrading Control-M/Agent clusters and IKP
-Guidelines for notifying users about maintenance and upgrades
-7.Resources and Contact Information
+# Create the sub-folder if it doesn't exist
+if not os.path.exists('./source'):
+    os.makedirs('./source')
 
-List of relevant documentation, websites, and forums for additional information
-Contact information for key personnel and teams involved in supporting Control-M/Agent clusters and IKP
+# Loop through each file and download it to the local disk
+failed_files = []
+for file_info in file_list:
+    try:
+        # Copy the file to the local disk
+        dest_path = os.path.join('./source', os.path.basename(file_info['file']))
+        shutil.copy(file_info['file'], dest_path)
+        
+        # Print a success message
+        print(f"Downloaded file {file_info['file']} to {dest_path}")
+    except Exception as e:
+        # Add the failed file to the list and print a warning message
+        failed_files.append(file_info)
+        print(f"WARNING: Failed to download file {file_info['file']}: {e}")
+
+# Write the list of failed files to a log file
+if failed_files:
+    log_filename = f"./logs/history_{datetime.now().strftime('%Y%m%d')}.txt"
+    with open(log_filename, 'w') as log_file:
+        for file_info in failed_files:
+            log_file.write(f"Failed to download file {file_info['file']} for region {file_info['region']} on {file_info['date']}\n")
+    print(f"WARNING: {len(failed_files)} files failed to download. See log file {log_filename} for details.")
+else:
+    print("All files downloaded successfully.")

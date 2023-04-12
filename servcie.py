@@ -37,11 +37,16 @@ if not os.path.exists('./source'):
 
 # Loop through each file and download it to the local disk
 failed_files = []
+downloaded_files = []  # Added a list to store downloaded file information
 for file_info in file_list:
     try:
-        # Copy the file to the local disk
-        dest_path = os.path.join('./source', os.path.basename(file_info['file']))
+        # Copy the file to the local disk with the region prefix
+        dest_filename = f"{file_info['region']}_{os.path.basename(file_info['file'])}"
+        dest_path = os.path.join('./source', dest_filename)
         shutil.copy(file_info['file'], dest_path)
+        
+        # Append the downloaded file information to the downloaded_files list
+        downloaded_files.append({'region': file_info['region'], 'date': file_info['date'], 'file': dest_path})
         
         # Print a success message
         print(f"Downloaded file {file_info['file']} to {dest_path}")
@@ -59,3 +64,8 @@ if failed_files:
     print(f"WARNING: {len(failed_files)} files failed to download. See log file {log_filename} for details.")
 else:
     print("All files downloaded successfully.")
+
+# Output the list of downloaded file information
+print("Downloaded files information:")
+for info in downloaded_files:
+    print(info)

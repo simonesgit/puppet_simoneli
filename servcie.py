@@ -190,17 +190,29 @@ def process_em_logs(raw_log_em, audit_accounts, date_from, date_to):
 
     return logs_df
 
+import os
+import shutil
+from datetime import datetime, timedelta
 
+def logger(loginfo):
+    print(loginfo)
 
 def download_files(source_paths, pattern, date_from, date_to, skip_existing_files=True):
     file_list = []
+
+    # Store os.walk results for each source path
+    walk_results = {}
+    for region, path in source_paths.items():
+        walk_results[region] = list(os.walk(path))
 
     current_date = date_from
     while current_date <= date_to:
         found_files = []
 
+        # Loop through each source path
         for region, path in source_paths.items():
-            for root, _, files in os.walk(path):
+            # Use the stored os.walk results
+            for root, _, files in walk_results[region]:
                 for filename in files:
                     if pattern in filename and current_date.strftime("%Y%m%d") in filename:
                         found_files.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': os.path.join(root, filename)})

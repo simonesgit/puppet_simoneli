@@ -1,6 +1,11 @@
 import os
 import shutil
+import bz2
 from datetime import datetime, timedelta
+
+import bz2
+from collections import defaultdict
+
 
 # Define the source file paths
 source_files = {'hk': '\\\\server\\pathhk', 'uk': '\\\\server2\\pathuk', 'us': '\\\\server3\\pathus'}
@@ -37,7 +42,7 @@ if not os.path.exists('./source'):
 
 # Loop through each file and download it to the local disk
 failed_files = []
-downloaded_files = []  # Added a list to store downloaded file information
+downloaded_files = []
 for file_info in file_list:
     try:
         # Copy the file to the local disk with the region prefix
@@ -55,17 +60,63 @@ for file_info in file_list:
         failed_files.append(file_info)
         print(f"WARNING: Failed to download file {file_info['file']}: {e}")
 
-# Write the list of failed files to a log file
-if failed_files:
-    log_filename = f"./logs/history_{datetime.now().strftime('%Y%m%d')}.txt"
-    with open(log_filename, 'w') as log_file:
-        for file_info in failed_files:
-            log_file.write(f"Failed to download file {file_info['file']} for region {file_info['region']} on {file_info['date']}\n")
-    print(f"WARNING: {len(failed_files)} files failed to download. See log file {log_filename} for details.")
-else:
-    print("All files downloaded successfully.")
+audit_roles = ['role1', 'role2', 'role3']
+audit_accounts = []
+ad_groups = []
 
-# Output the list of downloaded file information
-print("Downloaded files information:")
-for info in downloaded_files:
+for file_info in downloaded_files:
+    with bz2.open(file_info['file'], 'rt') as f:
+        for line in f:
+            account, role, ad_group, description = line.strip().split(',')
+
+            if role in audit_roles:
+                # Update audit_accounts
+                account_info = next((item for item in audit_accounts if item['account'] == account), None)
+                if account_info:
+                    if role not in account_info['acc_roles'].split(','):
+                        account_info['acc_roles'] += f",{role}"
+                else:
+                    audit_accounts.append({'account': account, 'acc_roles': role})
+
+                # Update ad_groups
+                role_info = next((item for item in ad_groups if item['role'] == role), None)
+                if role_info:
+                    if ad_group not in role_info['ad_group'].split(','):
+                        role_info['ad_group'] += f",{ad
+
+
+audit_roles = ['role1', 'role2', 'role3']
+
+audit_accounts = defaultdict(set)
+ad_groups = defaultdict(set)
+
+# Loop through the downloaded files
+for file_info in downloaded_files:
+    # Open and read the contents of the bz2 file
+    with bz2.open(file_info['file'], 'rt') as f:
+        # Process each line in the file
+        for line in f:
+            # Split the line by comma
+            account, role, ad_group, description = line.strip().split(',')
+
+            # Check if the role is in the audit_roles list
+            if role in audit_roles:
+                # Add the role to the audit_accounts dictionary
+                audit_accounts[account].add(role)
+
+                # Add the ad_group to the ad_groups dictionary
+                ad_groups[role].add(ad_group)
+
+# Convert the sets to comma-separated strings and store the results in lists
+audit_accounts = [{'account': account, 'acc_roles': ','.join(roles)} for account, roles in audit_accounts.items()]
+ad_groups = [{'role': role, 'ad_group': ','.join(groups)} for role, groups in ad_groups.items()]
+
+# Output the extracted information
+print("\nAudit accounts:")
+for info in audit_accounts:
     print(info)
+
+print("\nAD groups:")
+for info in ad_groups:
+    print(info)
+

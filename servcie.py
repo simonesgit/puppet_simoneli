@@ -253,35 +253,39 @@ def download_files(source_paths, pattern, date_from, date_to, skip_existing_file
 
     return downloaded_files
 
+def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
+    all_data = []
 
+    for log in raw_tpam_logs:
+        try:
+            with zipfile.ZipFile(log['file'], 'r') as zip_ref:
+                possible_files = ['PasswordReleasedActivity.csv', 'UnixPasswordReleasedActivity.csv']
+                target_file = None
 
-def process_tpam_logs(raw_tpam_logs, date_from, date_to):
-    df_list = []
+                for file in possible_files:
+                    if file in zip_ref.namelist():
+                        target_file = file
+                        break
 
-    for log_file in raw_tpam_logs:
-        with zipfile.ZipFile(log_file['file'], 'r') as z:
-            file_names = z.namelist()
-            target_file_name = None
+                if target_file is None:
+                    loginfo = f"WARNING: Can't identify the logs file inside the file named {log['file']}"
+                    logger(loginfo)
+                    continue
 
-            if 'PasswordReleasedActivity.csv' in file_names:
-                target_file_name = 'PasswordReleasedActivity.csv'
-            elif 'UnixPasswordReleasedActivity.csv' in file_names:
-                target_file_name = 'UnixPasswordReleasedActivity.csv'
-            else:
-                print(f"WARNING: Cannot identify the log file inside {log_file['file']}")
+                with zip_ref.open(target_file) as file:
+                    df = pd.read_csv(file, encoding="ISO-8859-1")
+                    df = df[df['AccountName'].isin(audited_accounts)]
+                    all_data.append(df)
+        except Exception as e:
+            loginfo = f"WARNING: Failed to process file {log['file']}: {e}"
+            logger(loginfo)
 
-            if target_file_name:
-                with z.open(target_file_name) as f:
-                    content = f.read().decode('ISO-8859-1')
-                    df = pd.read_csv(StringIO(content), encoding='ISO-8859-1')
-                    df_list.append(df)
-
-    if df_list:
-        all_data = pd.concat(df_list, ignore_index=True)
+    if all_data:
+        result = pd.concat(all_data, ignore_index=True)
         output_file = f"tpam_audit_logs_{date_from.strftime('%Y%m%d')}_{date_to.strftime('%Y%m%d')}.csv"
-        all_data.to_csv(output_file, index=False)
-        print(f"TPAM logs processed and saved as {output_file}")
-        return all_data
+        result.to_csv(output_file, index=False)
+        print(f"Data saved to {output_file}")
+        return result
     else:
         print("No data to process.")
         return None

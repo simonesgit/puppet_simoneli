@@ -252,3 +252,36 @@ def download_files(source_paths, pattern, date_from, date_to, skip_existing_file
         downloaded_files.append({'region': file_info['region'], 'date': file_info['date'], 'file': dest_path})
 
     return downloaded_files
+
+
+
+def process_tpam_logs(raw_tpam_logs, date_from, date_to):
+    df_list = []
+
+    for log_file in raw_tpam_logs:
+        with zipfile.ZipFile(log_file['file'], 'r') as z:
+            file_names = z.namelist()
+            target_file_name = None
+
+            if 'PasswordReleasedActivity.csv' in file_names:
+                target_file_name = 'PasswordReleasedActivity.csv'
+            elif 'UnixPasswordReleasedActivity.csv' in file_names:
+                target_file_name = 'UnixPasswordReleasedActivity.csv'
+            else:
+                print(f"WARNING: Cannot identify the log file inside {log_file['file']}")
+
+            if target_file_name:
+                with z.open(target_file_name) as f:
+                    content = f.read().decode('ISO-8859-1')
+                    df = pd.read_csv(StringIO(content), encoding='ISO-8859-1')
+                    df_list.append(df)
+
+    if df_list:
+        all_data = pd.concat(df_list, ignore_index=True)
+        output_file = f"tpam_audit_logs_{date_from.strftime('%Y%m%d')}_{date_to.strftime('%Y%m%d')}.csv"
+        all_data.to_csv(output_file, index=False)
+        print(f"TPAM logs processed and saved as {output_file}")
+        return all_data
+    else:
+        print("No data to process.")
+        return None

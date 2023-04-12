@@ -193,21 +193,45 @@ def process_em_logs(raw_log_em, audit_accounts, date_from, date_to):
 def download_files(source_paths, pattern, date_from, date_to, skip_existing_files=True):
     file_list = []
 
-    for region, path in source_paths.items():
-        region_files = []
+    if skip_existing_files:
+        files_in_source = os.listdir('./source')
+        all_dates_covered = True
 
-        for root, _, files in os.walk(path):
-            for filename in files:
-                if pattern in filename:
-                    for current_date in (date_from + timedelta(days=n) for n in range((date_to - date_from).days + 1)):
-                        if current_date.strftime("%Y%m%d") in filename:
-                            region_files.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': os.path.join(root, filename)})
+        for region in source_paths.keys():
+            for current_date in (date_from + timedelta(days=n) for n in range((date_to - date_from).days + 1)):
+                date_string = current_date.strftime("%Y%m%d")
+                matching_files = [file for file in files_in_source if f"{region}_{pattern}_{date_string}" in file]
 
-        if not region_files:
-            loginfo = f"WARNING: No matching files found for region {region} and date range {date_from.strftime('%Y%m%d')} to {date_to.strftime('%Y%m%d')}"
-            logger(loginfo)
-        else:
-            file_list.extend(region_files)
+                if not matching_files:
+                    all_dates_covered = False
+                    break
+
+            if not all_dates_covered:
+                break
+
+        if all_dates_covered:
+            for region in source_paths.keys():
+                for current_date in (date_from + timedelta(days=n) for n in range((date_to - date_from).days + 1)):
+                    date_string = current_date.strftime("%Y%m%d")
+                    matching_file = next(file for file in files_in_source if f"{region}_{pattern}_{date_string}" in file)
+                    file_list.append({'region': region, 'date': date_string, 'file': os.path.join('./source', matching_file)})
+
+    if not file_list:
+        for region, path in source_paths.items():
+            region_files = []
+
+            for root, _, files in os.walk(path):
+                for filename in files:
+                    if pattern in filename:
+                        for current_date in (date_from + timedelta(days=n) for n in range((date_to - date_from).days + 1)):
+                            if current_date.strftime("%Y%m%d") in filename:
+                                region_files.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': os.path.join(root, filename)})
+
+            if not region_files:
+                loginfo = f"WARNING: No matching files found for region {region} and date range {date_from.strftime('%Y%m%d')} to {date_to.strftime('%Y%m%d')}"
+                logger(loginfo)
+            else:
+                file_list.extend(region_files)
 
     downloaded_files = []
 
@@ -217,7 +241,7 @@ def download_files(source_paths, pattern, date_from, date_to, skip_existing_file
     for file_info in file_list:
         dest_path = os.path.join('./source', f"{file_info['region']}_{os.path.basename(file_info['file'])}")
 
-        if not skip_existing_files or (skip_existing_files and not os.path.exists(dest_path)):
+        if not os.path.exists(dest_path):
             try:
                 shutil.copy(file_info['file'], dest_path)
                 print(f"Downloaded file {file_info['file']} to {dest_path}")

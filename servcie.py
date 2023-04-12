@@ -189,3 +189,46 @@ def process_em_logs(raw_log_em, audit_accounts, date_from, date_to):
     logs_df.to_csv(csv_filename, index=False)
 
     return logs_df
+
+
+
+def download_files(source_paths, pattern, date_from, date_to, skip_existing_files=True):
+    file_list = []
+
+    current_date = date_from
+    while current_date <= date_to:
+        found_files = []
+
+        for region, path in source_paths.items():
+            for root, _, files in os.walk(path):
+                for filename in files:
+                    if pattern in filename and current_date.strftime("%Y%m%d") in filename:
+                        found_files.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': os.path.join(root, filename)})
+
+        if found_files:
+            file_list.extend(found_files)
+        else:
+            loginfo = f"WARNING: No matching files found for date {current_date.strftime('%Y%m%d')}"
+            logger(loginfo)
+
+        current_date += timedelta(days=1)
+
+    downloaded_files = []
+
+    if not os.path.exists('./source'):
+        os.makedirs('./source')
+
+    for file_info in file_list:
+        dest_path = os.path.join('./source', f"{file_info['region']}_{os.path.basename(file_info['file'])}")
+
+        if not skip_existing_files or (skip_existing_files and not os.path.exists(dest_path)):
+            try:
+                shutil.copy(file_info['file'], dest_path)
+                print(f"Downloaded file {file_info['file']} to {dest_path}")
+            except Exception as e:
+                loginfo = f"WARNING: Failed to download file {file_info['file']}: {e}"
+                logger(loginfo)
+
+        downloaded_files.append({'region': file_info['region'], 'date': file_info['date'], 'file': dest_path})
+
+    return downloaded_files

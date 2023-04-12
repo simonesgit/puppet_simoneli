@@ -253,10 +253,18 @@ def download_files(source_paths, pattern, date_from, date_to, skip_existing_file
 
     return downloaded_files
 
+import pandas as pd
+import zipfile
+import os
+
+def logger(loginfo):
+    print(loginfo)
+
 def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
     all_data = []
+    target_accounts = [acc['account'] for acc in audited_accounts]
 
-    for log in raw_tpam_logs:
+    for i, log in enumerate(raw_tpam_logs):
         try:
             with zipfile.ZipFile(log['file'], 'r') as zip_ref:
                 possible_files = ['PasswordReleasedActivity.csv', 'UnixPasswordReleasedActivity.csv']
@@ -274,11 +282,15 @@ def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
 
                 with zip_ref.open(target_file) as file:
                     df = pd.read_csv(file, encoding="ISO-8859-1")
-                    df = df[df['AccountName'].isin(audited_accounts)]
+                    df = df[df['AccountName'].isin(target_accounts)]
                     all_data.append(df)
         except Exception as e:
             loginfo = f"WARNING: Failed to process file {log['file']}: {e}"
             logger(loginfo)
+
+        # Print progress
+        progress = (i + 1) / len(raw_tpam_logs) * 100
+        print(f"Progress: {progress:.2f}%")
 
     if all_data:
         result = pd.concat(all_data, ignore_index=True)
@@ -289,3 +301,4 @@ def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
     else:
         print("No data to process.")
         return None
+

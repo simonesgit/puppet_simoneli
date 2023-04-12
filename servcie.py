@@ -197,33 +197,21 @@ from datetime import datetime, timedelta
 def logger(loginfo):
     print(loginfo)
 
-def download_files(source_paths, pattern, date_from, date_to, skip_existing_files=True):
-    file_list = []
-
-    # Store os.walk results for each source path
-    walk_results = {}
     for region, path in source_paths.items():
-        walk_results[region] = list(os.walk(path))
+        region_files = []
 
-    current_date = date_from
-    while current_date <= date_to:
-        found_files = []
+        for root, _, files in os.walk(path):
+            for filename in files:
+                if pattern in filename:
+                    for current_date in (date_from + timedelta(days=n) for n in range((date_to - date_from).days + 1)):
+                        if current_date.strftime("%Y%m%d") in filename:
+                            region_files.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': os.path.join(root, filename)})
 
-        # Loop through each source path
-        for region, path in source_paths.items():
-            # Use the stored os.walk results
-            for root, _, files in walk_results[region]:
-                for filename in files:
-                    if pattern in filename and current_date.strftime("%Y%m%d") in filename:
-                        found_files.append({'region': region, 'date': current_date.strftime("%Y%m%d"), 'file': os.path.join(root, filename)})
-
-        if found_files:
-            file_list.extend(found_files)
-        else:
-            loginfo = f"WARNING: No matching files found for date {current_date.strftime('%Y%m%d')}"
+        if not region_files:
+            loginfo = f"WARNING: No matching files found for region {region} and date range {date_from.strftime('%Y%m%d')} to {date_to.strftime('%Y%m%d')}"
             logger(loginfo)
-
-        current_date += timedelta(days=1)
+        else:
+            file_list.extend(region_files)
 
     downloaded_files = []
 

@@ -133,6 +133,11 @@ for file_info in downloaded_files:
 audit_accounts = [{'account': account, 'acc_roles': ','.join(roles)} for account, roles in audit_accounts.items()]
 ad_groups = [{'role': role, 'ad_group': ','.join(groups)} for role, groups in ad_groups.items()]
 
+ad_groups2 = []
+for role, groups in ad_groups.items():
+    for group in groups:
+        ad_groups2.append({'role': role, 'ad_group': group})
+
 # Output the extracted information
 print("\nAudit accounts:")
 for info in audit_accounts:
@@ -142,3 +147,6 @@ print("\nAD groups:")
 for info in ad_groups:
     print(info)
 
+print("\nAD groups2:")
+for info in ad_groups2:
+    print(info)

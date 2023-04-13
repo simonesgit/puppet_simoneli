@@ -1,17 +1,19 @@
-def find_tpamlogs_row(user_note, tpamlogs, pattern=r'in\d+'):
-    match = re.search(pattern, user_note)
-    if match:
-        ticket_nbr = match.group(0)
-        tpamlogs_row = tpamlogs[tpamlogs['TicketNbr'] == ticket_nbr]
-        if not tpamlogs_row.empty:
-            return tpamlogs_row.iloc[0]
-    return None
+import pandasql as psql
 
-# Apply the function to the USER_NOTE column to create a new DataFrame with matched rows from tpamlogs
-matched_tpamlogs = emlogs['USER_NOTE'].apply(find_tpamlogs_row, args=(tpamlogs,))
+# Assuming you have two DataFrames: df_em and df_tpam
 
-# Combine the matched rows with the original tpamlogs DataFrame
-matched_tpamlogs = pd.concat([matched_tpamlogs.dropna().reset_index(drop=True), tpamlogs]).drop_duplicates(keep=False).reset_index(drop=True)
+# Rename the columns to avoid any conflicts with SQL keywords
+df_em = df_em.rename(columns={'USER_NOTE': 'user_note'})
+df_tpam = df_tpam.rename(columns={'TicketNbr': 'ticket_nbr'})
 
-# Now concatenate emlogs and matched_tpamlogs
-result_df = pd.concat([emlogs, matched_tpamlogs], axis=1)
+# SQL query to merge the DataFrames
+query = """
+SELECT a.*, b.*
+FROM df_em a
+LEFT JOIN df_tpam b
+ON a.user_note LIKE '%' || b.ticket_nbr || '%'
+"""
+
+result_df = psql.sqldf(query, locals())
+
+print(result_df)

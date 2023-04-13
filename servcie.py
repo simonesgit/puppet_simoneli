@@ -301,4 +301,7 @@ def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
     else:
         print("No data to process.")
         return None
-df = emlogs.merge(tpamlogs[tpamlogs['TicketNbr'].apply(lambda x: any(sub in x for sub in emlogs['USER_NOTE'].tolist()))], left_on='USER_NOTE', right_on=lambda x: tpamlogs.loc[tpamlogs['TicketNbr'].apply(lambda y: x in y)].index[0], how='outer')
+emlogs['TicketNbr'] = emlogs['USER_NOTE'].str.extract(r'(?P<TicketNbr>in\d+)')
+
+# Now, merge both DataFrames on the TicketNbr column
+merged_df = pd.merge(emlogs, tpamlogs, on='TicketNbr', how='outer')

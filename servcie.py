@@ -303,5 +303,19 @@ def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
         return None
 emlogs['TicketNbr'] = emlogs['USER_NOTE'].str.extract(r'(?P<TicketNbr>in\d+)')
 
+# Define a function to extract the TicketNbr from the USER_NOTE column in emlogs
+def extract_ticket_nbr(user_note, pattern=r'in\d+'):
+    match = re.search(pattern, user_note)
+    return match.group(0) if match else None
+
+# Apply the function to the USER_NOTE column to create a new 'TicketNbr' column in emlogs
+emlogs['TicketNbr'] = emlogs['USER_NOTE'].apply(extract_ticket_nbr)
+
 # Now, merge both DataFrames on the TicketNbr column
 merged_df = pd.merge(emlogs, tpamlogs, on='TicketNbr', how='outer')
+
+# If you receive a FutureWarning, it might be related to the index dtype. To fix this,
+# you can explicitly specify the dtype when creating the DataFrames or change it later.
+# Example:
+# emlogs.index = emlogs.index.astype(int)
+# tpamlogs.index = tpamlogs.index.astype(int)

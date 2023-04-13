@@ -301,4 +301,4 @@ def process_tpam_logs(raw_tpam_logs, audited_accounts, date_from, date_to):
     else:
         print("No data to process.")
         return None
-
+df = emlogs.merge(tpamlogs[tpamlogs['TicketNbr'].isin(emlogs['USER_NOTE'].str.extract('({})'.format('|'.join(tpamlogs['TicketNbr'])), expand=False))], left_on='USER_NOTE', right_on='TicketNbr', how='outer')

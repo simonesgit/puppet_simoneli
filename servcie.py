@@ -1,21 +1,9 @@
-def save_dataframe_as_excel_xlsxwriter(df, filename, sheet_name='Sheet1', max_width_columns=None):
-    # Create a Pandas Excel writer using XlsxWriter as the engine
-    writer = pd.ExcelWriter(filename, engine='xlsxwriter')
+# Assuming you have a DataFrame called df
+columns_to_rename = ['old_column_name1', 'old_column_name2']  # Replace with the column names you want to rename
+new_column_names = ['new_column_name1', 'new_column_name2']  # Replace with the desired new column names
 
-    # Convert the DataFrame to an XlsxWriter Excel object
-    df.to_excel(writer, sheet_name=sheet_name, index=False)
+# Create a dictionary to map old column names to new column names only for the columns in columns_to_rename
+column_mapping = {old: new for old, new in zip(columns_to_rename, new_column_names)}
 
-    # Get the xlsxwriter workbook and worksheet objects
-    workbook = writer.book
-    worksheet = writer.sheets[sheet_name]
-
-    # Adjust column widths
-    for col_idx, col in enumerate(df.columns):
-        if max_width_columns is None or col not in max_width_columns:
-            max_data_length = df[col].astype(str).str.len().max()
-            max_col_name_length = len(col)
-            max_length = max(max_data_length, max_col_name_length)
-            worksheet.set_column(col_idx, col_idx, max_length + 2)
-
-    # Close the Pandas Excel writer and output the Excel file using the save method of the workbook object
-    workbook.close()
+# Rename columns using the column_mapping dictionary
+df = df.rename(columns=column_mapping)

@@ -1,39 +1,22 @@
 import pandas as pd
 
-def special_processing(df):
-    tmp_su, tmp_un, tmp_hn = None, None, None
+def filter_tpam_by_em_notes(df_em, df_tpam):
+    matched_rows = []
 
-    for index, row in df.iterrows():
-        if row['Operation'] == 'LOGIN USER':
-            tmp_su = row['System_Username']
-            tmp_un = row['Username']
-            tmp_hn = row['HOSTNAME']
+    for _, em_row in df_em.iterrows():
+        user_note = em_row['USER_NOTE']
+        username = em_row['Username']
+        matched_tpam_rows = df_tpam[(df_tpam['TicketNbr'].apply(lambda x: str(x) in user_note)) &
+                                     (df_tpam['AccountName'] == username)]
 
-            # Query rows after the current row
-            for inner_index, inner_row in df.iloc[index+1:].iterrows():
-                if (inner_row['Username'] == tmp_un and
-                    inner_row['HOSTNAME'] == tmp_hn and
-                    (inner_row['System_Username'] == '' or pd.isna(inner_row['System_Username']))):
-                    # Set System_Username to the temporary stored value
-                    df.at[inner_index, 'System_Username'] = tmp_su
+        if not matched_tpam_rows.empty:
+            for _, tpam_row in matched_tpam_rows.iterrows():
+                merged_row = em_row.copy()
+                merged_row.update(tpam_row)
+                matched_rows.append(merged_row.to_dict())
 
-# Sample data for testing
-data = {
-    'Operation': ['LOGIN USER', 'QUERY', 'LOGIN USER', 'QUERY'],
-    'System_Username': ['sys_user1', None, 'sys_user2', None],
-    'Username': ['user1', 'user1', 'user2', 'user2'],
-    'HOSTNAME': ['host1', 'host1', 'host2', 'host2']
-}
+    matched_df = pd.DataFrame(matched_rows)
+    return matched_df
 
-df = pd.DataFrame(data)
-
-# Fill missing values with empty strings
-df.fillna('', inplace=True)
-
-print("Before processing:")
-print(df)
-
-special_processing(df)
-
-print("\nAfter processing:")
-print(df)
+# Assuming you already have df_em and df_tpam loaded
+merged_df = filter_tpam_by_em_notes(df_em, df_tpam)

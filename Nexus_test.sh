@@ -1,22 +1,18 @@
 import pandas as pd
 
-def filter_tpam_by_em_notes(df_em, df_tpam):
-    matched_rows = []
+# Dummy data for demonstration
+df_em = pd.DataFrame({"Username": ["user1", "user2", "user3"], "USER_NOTE": ["TicketNbr: 123", "TicketNbr: 456", "TicketNbr: 789"]})
+df_tpam = pd.DataFrame({"AccountName": ["user1", "user2", "user3"], "TicketNbr": ["123", "456", "789"], "Data": ["A", "B", "C"]})
 
-    for _, em_row in df_em.iterrows():
-        user_note = em_row['USER_NOTE']
-        username = em_row['Username']
-        matched_tpam_rows = df_tpam[(df_tpam['TicketNbr'].apply(lambda x: str(x) in user_note)) &
-                                     (df_tpam['AccountName'] == username)]
+def find_tpam_row(user_note, username, df_tpam):
+    for _, row in df_tpam.iterrows():
+        if row["TicketNbr"] in user_note and row["AccountName"] == username:
+            return row
+    return pd.Series()  # Return an empty Series if no match is found
 
-        if not matched_tpam_rows.empty:
-            for _, tpam_row in matched_tpam_rows.iterrows():
-                merged_row = em_row.copy()
-                merged_row.update(tpam_row)
-                matched_rows.append(merged_row.to_dict())
+matched_tpam = df_em.apply(lambda row: find_tpam_row(row["USER_NOTE"], row["Username"], df_tpam), axis=1)
 
-    matched_df = pd.DataFrame(matched_rows)
-    return matched_df
+# Concatenate the resulting DataFrames
+df_result = pd.concat([df_em, matched_tpam.reset_index(drop=True)], axis=1)
 
-# Assuming you already have df_em and df_tpam loaded
-merged_df = filter_tpam_by_em_notes(df_em, df_tpam)
+print(df_result)

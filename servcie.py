@@ -1,17 +1,8 @@
-def special_processing(df):
-    user_mapping = {}
+# Create an empty DataFrame with the same columns as df_em and the same number of rows as unmatched_tpam
+empty_df_em = pd.DataFrame(np.nan, index=range(len(unmatched_tpam)), columns=df_em.columns)
 
-    for index, row in df.iterrows():
-        if row['Operation'] == 'LOGIN USER':
-            key = (row['Username'], row['HOSTNAME'])
-            user_mapping[key] = row['System_Username']
+# Concatenate empty_df_em with unmatched_tpam
+unmatched_combined = pd.concat([empty_df_em.reset_index(drop=True), unmatched_tpam.reset_index(drop=True)], axis=1)
 
-        elif row['Operation'] == 'LOGOUT USER':
-            key = (row['Username'], row['HOSTNAME'])
-            if key in user_mapping:
-                del user_mapping[key]
-
-        else:
-            key = (row['Username'], row['HOSTNAME'])
-            if key in user_mapping and (row['System_Username'] == '' or pd.isna(row['System_Username'])):
-                df.at[index, 'System_Username'] = user_mapping[key]
+# Concatenate df_result with unmatched_combined
+df_result = pd.concat([df_result, unmatched_combined], ignore_index=True)

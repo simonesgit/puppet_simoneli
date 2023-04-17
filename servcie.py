@@ -21,3 +21,5 @@ df['TP_AccessType'] = df['TP_Reason'].str.extract(access_type_pattern)
 df['TP_Summary'] = df['TP_Reason'].str.extract(summary_pattern)
 
 print(df)
+
+

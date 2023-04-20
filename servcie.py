@@ -1,27 +1,57 @@
-def find_tpam_row(user_note, username, df_tpam):
-    for idx, tpam_row in df_tpam.iterrows():
-        if contains_ticket_nbr(user_note, tpam_row["TicketNbr"]) and tpam_row["AccountName"] == username:
-            return idx
-    return None
+#!/bin/bash
 
-  
-matched_indices = set()
-matched_tpam = df_em.apply(lambda x: find_tpam_row(x["USER_NOTE"], x["Username"], df_tpam), axis=1)
+# Variables
+REPOSITORY="<your_repository>"
+ARTIFACT_GROUP="com/bbc/controlm/linux/scripts"
+ARTIFACT_PREFIX="ctmag_support_scripts"
+NEXUS_BASE_URL="http://<your_nexus_server>:<port>/service/rest/v1/search"
+UNIT_TEST=true
 
-# Add matched rows to matched_tpam DataFrame
-matched_rows = [df_tpam.loc[idx] for idx in matched_tpam if idx is not None]
-matched_indices.update(matched_tpam.dropna().astype(int))
+# Function to compare versions
+version_compare() {
+    printf '%s\n' "$@" | sort -V | tail -n 1
+}
 
-# Create an empty DataFrame for unmatched rows
-unmatched_tpam = pd.DataFrame(columns=df_tpam.columns)
+if [ "$UNIT_TEST" = true ]; then
+    # Dummy ARTIFACTS for testing purposes
+    ARTIFACTS='
+    {
+      "items" : [ {
+        "downloadUrl" : "http://your_nexus_server:port/repository/your_repository/com/bbc/controlm/linux/scripts/9.0.20/ctmag_support_scripts-9.0.21.001.zip",
+        "path" : "com/bbc/controlm/linux/scripts/9.0.22.001/ctmag_support_scripts-9.0.21.001.zip"
+      }, {
+        "downloadUrl" : "http://your_nexus_server:port/repository/your_repository/com/bbc/controlm/linux/scripts/9.0.21/ctmag_support_scripts-9.0.21.002.zip",
+        "path" : "com/bbc/controlm/linux/scripts/9.0.21.001/ctmag_support_scripts-9.0.21.002.zip"
+      }, {
+        "downloadUrl" : "http://your_nexus_server:port/repository/your_repository/com/bbc/controlm/linux/scripts/9.0.21.001/ctmag_support_scripts-9.0.21.001.zip",
+        "path" : "com/bbc/controlm/linux/scripts/9.0.21.001/ctmag_support_scripts-9.0.21.002.zip"
+      }, {
+        "downloadUrl" : "http://your_nexus_server:port/repository/your_repository/com/bbc/controlm/linux/scripts/9.0.21.001/ctmag_support_scripts-9.0.21.002.zip",
+        "path" : "com/bbc/controlm/linux/scripts/9.0.21.001/ctmag_support_scripts-9.0.21.002.zip"
+      } ]
+    }
+    '
+else
+    # Uncomment this line to use the actual curl request
+    ARTIFACTS=$(curl -sSF "${NEXUS_BASE_URL}?repository=${REPOSITORY}&group=/${ARTIFACT_GROUP}/*")
+fi
 
-# Add unmatched rows to unmatched_tpam DataFrame
-unmatched_rows = [row for idx, row in df_tpam.iterrows() if idx not in matched_indices]
-unmatched_tpam = pd.concat([unmatched_tpam, pd.DataFrame(unmatched_rows)], ignore_index=True)
+# Filter artifacts based on prefix and extract path versions
+PATH_VERSIONS=$(echo "$ARTIFACTS" | grep downloadUrl | grep -oP "${ARTIFACT_GROUP}/[0-9]+(\.[0-9]+)+/${ARTIFACT_PREFIX}" | grep -oP '[0-9]+(\.[0-9]+)+')
 
+if [ "$UNIT_TEST" = true ]; then
+    echo $PATH_VERSIONS
+fi
 
-# Merge df_em and matched_tpam
-df_result = pd.concat([df_em, pd.DataFrame(matched_rows).reset_index(drop=True)], axis=1)
+# Find the latest path version
+LATEST_PATH_VERSION=""
+for VERSION in $PATH_VERSIONS; do
+    LATEST_PATH_VERSION=$(version_compare "$LATEST_PATH_VERSION" "$VERSION")
+done
 
-# Add unmatched_tpam to the final result
-df_result = pd.concat([df_result, unmatched_tpam], ignore_index=True)
+if [ "$UNIT_TEST" = true ]; then
+    echo "Latest path version: ${LATEST_PATH_VERSION}"
+fi
+
+# Filter file versions based on the latest path version
+FILE_VERSIONS=$(echo "$ARTIFACTS" | grep downloadUrl | grep  "${ARTIFACT_GROUP}/${LATEST_PATH_VERSION}" |grep -o

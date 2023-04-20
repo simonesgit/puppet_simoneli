@@ -69,3 +69,21 @@ print_if_unit_test "Latest file version: ${LATEST_FILE_VERSION}"
 # Find the artifact with the latest path version and latest file version
 LATEST_ARTIFACT=$(echo "$ARTIFACTS" | grep -oP "\"downloadUrl\" *: *\"http[^\"]*${ARTIFACT_GROUP}/${LATEST_PATH_VERSION}/${ARTIFACT_PREFIX}-${LATEST_FILE_VERSION}[^\"\n]*\"" | sed -E 's/\"downloadUrl\" *: *\"//;s/\"//')
 echo $LATEST_ARTIFACT
+
+
+#!/bin/bash
+
+REQUIRED_SPACE_MB=1536
+TARGET_PATH="/opt/controlm/ctmag1"
+
+# Create the target directory if it does not exist
+mkdir -p "$TARGET_PATH"
+
+# Get the available space in MB
+AVAILABLE_SPACE_MB=$(df -Pm "$TARGET_PATH" | awk 'NR==2 {print $4}')
+
+if [ "$AVAILABLE_SPACE_MB" -ge "$REQUIRED_SPACE_MB" ]; then
+    echo "There is enough space available under ${TARGET_PATH}."
+else
+    echo "There is not enough space under ${TARGET_PATH} (Available: ${AVAILABLE_SPACE_MB} MB, Required: ${REQUIRED_SPACE_MB} MB)."
+fi

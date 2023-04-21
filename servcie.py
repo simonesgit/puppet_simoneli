@@ -67,7 +67,7 @@ done
 print_if_unit_test "Latest file version: ${LATEST_FILE_VERSION}"
 
 # Find the artifact with the latest path version and latest file version
-LATEST_ARTIFACT=$(echo "$ARTIFACTS" | grep -oP "\"downloadUrl\" *: *\"http[^\"]*${ARTIFACT_GROUP}/${LATEST_PATH_VERSION}/${ARTIFACT_PREFIX}-${LATEST_FILE_VERSION}[^\"\n]*\"" | sed -E 's/\"downloadUrl\" *: *\"//;s/\"//')
+LATEST_ARTIFACT=$(echo "$ARTIFACTS" | grep -oP "\"downloadUrl\" *: *\"http[^\"]*${ARTIFACT_GROUP}/${LATEST_PATH_VERSION}/${ARTIFACT_PREFIX}_${LATEST_FILE_VERSION}[^\"\n]*\"" | sed -E 's/\"downloadUrl\" *: *\"//;s/\"//')
 echo $LATEST_ARTIFACT
 
 

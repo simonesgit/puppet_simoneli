@@ -75,6 +75,7 @@ echo $LATEST_ARTIFACT
 
 REQUIRED_SPACE_MB=1536
 TARGET_PATH="/opt/controlm/ctmag1"
+[ -d "/opt/controlm" ] && path="/opt/controlm" || { [ -d "/opt" ] && path="/opt" || { [ "$UNIT_TEST" == "true" ] && path="/dev" || { echo "Error: Cannot validate available space"; exit 1; } } }
 
 # Create the target directory if it does not exist
 mkdir -p "$TARGET_PATH"

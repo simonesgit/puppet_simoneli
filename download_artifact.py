@@ -15,6 +15,9 @@ SEARCH_API = "/service/rest/v1/search"
 # Local storage path
 LOCAL_STORAGE_PATH = "./download"
 
+# SSL certificate path
+SSL_CERT_PATH = "./root_ca.pem"
+
 def get_all_artifacts(repository, group_filter):
     artifacts = []
     url = urljoin(NEXUS_URL, SEARCH_API)
@@ -24,7 +27,7 @@ def get_all_artifacts(repository, group_filter):
     }
 
     while url:
-        response = requests.get(url, params=params, auth=(USERNAME, PASSWORD), verify=False)
+        response = requests.get(url, params=params, auth=(USERNAME, PASSWORD), verify=SSL_CERT_PATH)
         response.raise_for_status()
         data = response.json()
 
@@ -41,7 +44,7 @@ def download_artifact(artifact, local_storage_path):
 
     os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
 
-    response = requests.get(download_url, auth=(USERNAME, PASSWORD), verify=False, stream=True)
+    response = requests.get(download_url, auth=(USERNAME, PASSWORD), verify=SSL_CERT_PATH, stream=True)
     response.raise_for_status()
 
     with open(local_file_path, "wb") as f:

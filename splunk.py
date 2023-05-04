@@ -1,5 +1,6 @@
 import splunklib.client as client
-import splunklib.results as results
+import pandas as pd
+import io
 import time
 
 SPLUNK_HOST = 'your_splunk_host'  # e.g., 'localhost', 'splunk.mydomain.com'
@@ -32,6 +33,10 @@ job = service.jobs.create(search_query, **search_parameters)
 while not job.is_done():
     time.sleep(2)  # Wait for the job to complete
 
-results_reader = results.ResultsReader(job.results())
-for result in results_reader:
-    print(result)
+# Get the results in CSV format
+csv_data = job.results(output_mode='csv').read()
+
+# Read the results as a pandas DataFrame
+data_frame = pd.read_csv(io.StringIO(csv_data.decode('utf-8')))
+
+print(data_frame)

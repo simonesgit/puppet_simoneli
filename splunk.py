@@ -1,5 +1,6 @@
 import splunklib.client as client
 import splunklib.results as results
+import time
 
 SPLUNK_HOST = 'your_splunk_host'  # e.g., 'localhost', 'splunk.mydomain.com'
 SPLUNK_PORT = 8089                # default management port is 8089
@@ -13,24 +14,19 @@ service = client.connect(
     password=SPLUNK_PASSWORD
 )
 
+# Set the search query from the dashboard panel
+search_query = '''
+| inputlookup filename.csv
+| search ...
+| table ...
+'''
 
-
-search_query = 'your_search_query'  # e.g., 'search index=_internal | head 10'
-search_parameters = {'exec_mode': 'normal'}
-
-job = service.jobs.create(search_query, **search_parameters)
-while not job.is_done():
-    time.sleep(2)  # Wait for the job to complete
-
-results_reader = results.ResultsReader(job.results())
-for result in results_reader:
-    print(result)
-##
-report_id = 'your_report_id'  # e.g., 'my_saved_search'
-report = service.saved_searches[report_id]
-
-search_query = report["search"]
-search_parameters = {'exec_mode': 'normal'}
+# Execute the search query
+search_parameters = {
+    'exec_mode': 'normal',
+    'earliest_time': '0',
+    'latest_time': 'now',
+}
 
 job = service.jobs.create(search_query, **search_parameters)
 while not job.is_done():

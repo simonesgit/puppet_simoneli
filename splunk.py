@@ -15,22 +15,58 @@ search_query = '''
 '''
 
 # Set the URL for the Splunk REST API
-url = f"https://{SPLUNK_HOST}:{SPLUNK_PORT}/services/search/jobs/export"
+create_job_url = f"https://{SPLUNK_HOST}:{SPLUNK_PORT}/services/search/jobs"
 
 # Set up the request parameters
-request_params = {
-    "output_mode": "csv",
+create_job_params = {
     "search": f"search {search_query}",
+    "exec_mode": "normal",
     "earliest_time": "0",
     "latest_time": "now",
 }
 
-# Send the request to the Splunk REST API
+# Send the request to create a search job
 response = requests.post(
-    url,
+    create_job_url,
     auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
-    data=request_params,
+    data=create_job_params,
     verify=False  # Set to True if you have a valid SSL certificate
+)
+
+# Get the search job SID
+response_xml = response.text
+sid_start = response_xml.find("<sid>") + 5
+sid_end = response_xml.find("</sid>")
+sid = response_xml[sid_start:sid_end]
+
+# Poll the search job until it's done
+job_status_url = f"{create_job_url}/{sid}"
+job_is_done = False
+
+while not job_is_done:
+    response = requests.get(
+        job_status_url,
+        auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
+        verify=False
+    )
+    response_xml = response.text
+    is_done_start = response_xml.find("<isDone>") + 8
+    is_done_end = response_xml.find("</isDone>")
+    is_done_value = response_xml[is_done_start:is_done_end]
+    job_is_done = is_done_value == "1"
+    time.sleep(2)
+
+# Fetch the search results as CSV
+results_url = f"{job_status_url}/results"
+results_params = {
+    "output_mode": "csv",
+}
+
+response = requests.get(
+    results_url,
+    auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
+    params=results_params,
+    verify=False
 )
 
 # Save the results to a file

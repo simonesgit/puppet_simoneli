@@ -20,9 +20,6 @@ if "%pid%"=="" (
     goto PROCESS_ENDED
 )
 
-REM Print the output file contents
-type "%output_file%"
-
 REM Decrement the timeout value
 set /a timeout-=1
 
@@ -38,10 +35,14 @@ goto CHECK_PROCESS
 
 :PROCESS_ENDED
 echo Process has ended.
+REM Print the output file contents
+type "%output_file%"
 goto CLEANUP
 
 :TIMEOUT_REACHED
 echo Timeout reached. Exiting...
+REM Print the output file contents
+type "%output_file%"
 goto CLEANUP
 
 :CLEANUP

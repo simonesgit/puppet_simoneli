@@ -14,7 +14,7 @@ set process_running=1
 
 REM Monitor the process and get the process ID
 :CHECK_PROCESS
-for /f "tokens=2 delims==; " %%P in ('wmic process where CommandLine^="cmd /C %command%" get ProcessId /value') do set "pid=%%P"
+for /f "tokens=2 delims==; " %%P in ('wmic process where "CommandLine like '%%cmd /C %command%%%'" get ProcessId /value') do set "pid=%%P"
 if "%pid%"=="" (
     set process_running=0
     goto PROCESS_ENDED
@@ -34,15 +34,15 @@ timeout /T 1 /NOBREAK > nul
 goto CHECK_PROCESS
 
 :PROCESS_ENDED
-echo Process has ended.
 REM Print the output file contents
 type "%output_file%"
+echo Process has ended.
 goto CLEANUP
 
 :TIMEOUT_REACHED
-echo Timeout reached. Exiting...
 REM Print the output file contents
 type "%output_file%"
+echo Timeout reached. Exiting...
 goto CLEANUP
 
 :CLEANUP

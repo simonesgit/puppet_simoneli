@@ -51,3 +51,38 @@ df = pd.DataFrame(data, columns=['region', 'dataCenter', 'hostgroup', 'agent'])
 
 # Print the dataframe
 print(df)
+df_hhg = df
+
+
+import pandas as pd
+
+# Read the first sheet in the xlsx file into a dataframe
+agent_inventory_file = r"HKUKUS_Agent_Inventory.xlsx"
+df_agent = pd.read_excel(agent_inventory_file, sheet_name=0)
+
+# Existing dataframe df_hhg (Assuming it is already defined)
+# df_hhg = ...
+
+# Create a new column 'hostname' in df_hhg
+df_hhg['hostname'] = ''
+
+# Iterate over each row in df_agent
+for index, row in df_agent.iterrows():
+    domain = row['Domain']
+    object_value = row['Object']
+    
+    # Find rows in df_hhg where 'Object' matches 'agent' and 'Domain' matches 'domain'
+    matching_rows = df_hhg.loc[(df_hhg['Object'] == 'agent') & (df_hhg['Domain'] == domain)]
+    
+    if matching_rows.empty:
+        continue
+    
+    # Update the 'hostname' column with 'Domain' value in matching rows
+    df_hhg.loc[matching_rows.index, 'hostname'] = domain
+    
+    # Create additional rows in df_hhg if there are multiple matches of 'Domain'
+    for _ in range(len(matching_rows) - 1):
+        df_hhg = df_hhg.append(matching_rows, ignore_index=True)
+
+# Print the updated df_hhg
+print(df_hhg)

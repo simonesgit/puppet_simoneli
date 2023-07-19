@@ -1,0 +1,6 @@
+Yes, Nexus 3 provides a REST API that allows you to retrieve the hash or MD5 of an artifact without downloading it to your local machine. You can use the following API endpoint to retrieve the artifact's hash or MD5:
+GET /service/rest/v1/components/{componentId}/assets/{assetId}
+
+In this API endpoint, you need to replace {componentId} with the ID of the component (e.g., maven-metadata) and {assetId} with the ID of the asset (e.g., maven-metadata.xml).
+By issuing a HTTP GET request to this endpoint, you will receive a response containing the hash and MD5 checksums of the artifact in the JSON format. You can extract the hash or MD5 value from the response and use it as needed.
+Please note that you need appropriate access permissions to access Nexus 3's REST API and retrieve artifact information.

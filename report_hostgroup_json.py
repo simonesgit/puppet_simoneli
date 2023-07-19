@@ -53,7 +53,6 @@ df = pd.DataFrame(data, columns=['region', 'dataCenter', 'hostgroup', 'agent'])
 print(df)
 df_hhg = df
 
-
 import pandas as pd
 
 # Read the first sheet in the xlsx file into a dataframe
@@ -65,6 +64,9 @@ df_agent = pd.read_excel(agent_inventory_file, sheet_name=0)
 
 # Create a new column 'hostname' in df_hhg
 df_hhg['hostname'] = ''
+
+# Create a new column 'HLQ' in df_hhg
+df_hhg['HLQ'] = ''
 
 # Iterate over each row in df_agent
 for index, row in df_agent.iterrows():
@@ -83,6 +85,12 @@ for index, row in df_agent.iterrows():
     # Create additional rows in df_hhg if there are multiple matches of 'Domain'
     for _ in range(len(matching_rows) - 1):
         df_hhg = df_hhg.append(matching_rows, ignore_index=True)
+
+# Update the 'HLQ' column in df_hhg based on hostgroup values
+df_hhg.loc[df_hhg['hostgroup'].str.startswith(('P', 'L', 'N')) & 
+            df_hhg['hostgroup'].str[4].isin(['W', 'L']), 'HLQ'] = df_hhg['hostgroup'].str[:4]
+
+df_hhg.loc[df_hhg['hostgroup'].str.startswith('CTMI'), 'HLQ'] = 'CTMI'
 
 # Print the updated df_hhg
 print(df_hhg)

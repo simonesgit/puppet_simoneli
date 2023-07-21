@@ -79,3 +79,15 @@ df_hostname.loc[df_hostname['hostgroup'].str.startswith('CTMI'), 'HLQ'] = 'CTMI'
 
 # Print the updated df_hostname
 print(df_hostname)
+
+
+
+
+
+SELECT dt.data_center, dt.sched_table, dj.table_id, dj.application, dj.node_id
+FROM (
+    SELECT DISTINCT node_id, table_id, application
+    FROM def_ver_job
+    WHERE task_type = 'Job'
+) dj
+JOIN def_ver_tables dt ON dj.table_id = dt.table_id;

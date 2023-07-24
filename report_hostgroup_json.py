@@ -84,10 +84,47 @@ print(df_hostname)
 
 
 
-SELECT dt.data_center, dt.sched_table, dj.table_id, dj.application, dj.node_id
-FROM (
-    SELECT DISTINCT node_id, table_id, application
-    FROM def_ver_job
-    WHERE task_type = 'Job'
-) dj
-JOIN def_ver_tables dt ON dj.table_id = dt.table_id;
+import pandas as pd
+
+# Read the df_hostname dataframe
+df_hostname = pd.read_excel('TABLE_NODE.xlsx', sheet_name='All Data')
+
+# Remove columns
+columns_to_remove = ['Object Class', 'Action']
+df_hostname = df_hostname.drop(columns=columns_to_remove)
+
+# Rename columns
+column_mapping = {
+    'Domain Class': 'OSType',
+    'Domain': 'hostname',
+    'DC': 'Env'
+}
+df_hostname = df_hostname.rename(columns=column_mapping)
+
+# Reorder columns
+column_order = ['Env'] + [col for col in df_hostname.columns if col != 'Env']
+df_hostname = df_hostname[column_order]
+
+# Read the df_apphlq dataframe
+df_apphlq = pd.read_excel('TABLE_NODE.xlsx', sheet_name='All Data')
+
+# Create the FOLDER_HLQ column
+def calculate_folder_hlq(sched_table):
+    uppercase_sched_table = sched_table.upper()
+    if uppercase_sched_table.startswith(('P', 'N', 'L')):
+        return uppercase_sched_table[:4]
+    elif uppercase_sched_table.startswith('CTM'):
+        return uppercase_sched_table[:4]
+    else:
+        return None
+
+df_apphlq['FOLDER_HLQ'] = df_apphlq['SCHED_TABLE'].apply(calculate_folder_hlq)
+
+# Perform the left join
+df_result = pd.merge(df_hostname, df_apphlq, how='left', left_on=['dataCenter', 'hostgroup'], right_on=['DATA_CENTER', 'NODE_ID'])
+
+# Select the desired columns from df_apphlq
+columns_to_select = ['APPLICATION', 'REGION', 'FOLDER_HLQ']
+df_result = df_result[df_result.columns.union(columns_to_select)]
+
+print(df_result)

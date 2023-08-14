@@ -9,14 +9,19 @@ df_result_final = pd.DataFrame(data)
 
 # Logic to process the dataframe
 
-# Get the count of unique HLQ-EIMID combinations
-count_df = df_result_final.groupby('EIMID')['HLQ'].nunique().reset_index(name='Count')
+# Get the rows with 1 HLQ to multiple EIMID relationship
+multiple_eimid = df_result_final.groupby('HLQ')['EIMID'].nunique().reset_index(name='Count')
+rows_multiple_eimid = df_result_final[df_result_final['HLQ'].isin(multiple_eimid[multiple_eimid['Count'] > 1]['HLQ'])]
 
-# Filter count dataframe where count is equal to 1 and sort by HLQ
-new_dataframe = count_df[count_df['Count'] == 1].sort_values(by='EIMID')
+# Get the rows with 1 HLQ and 1 EIMID relationship
+single_eimid = df_result_final.groupby('HLQ')['EIMID'].nunique().reset_index(name='Count')
+rows_single_eimid = df_result_final[df_result_final['HLQ'].isin(single_eimid[single_eimid['Count'] == 1]['HLQ'])]
 
-# Merge new dataframe with original dataframe to filter rows
-df_result_final = pd.merge(df_result_final, new_dataframe, on='EIMID')
+# Remove rows from rows_multiple_eimid if EIMID is in rows_single_eimid
+rows_multiple_eimid = rows_multiple_eimid[~rows_multiple_eimid['EIMID'].isin(rows_single_eimid['EIMID'])]
+
+# Combine rows_single_eimid and rows_multiple_eimid
+result = pd.concat([rows_single_eimid, rows_multiple_eimid], ignore_index=True)
 
 # Print the result
-print(df_result_final)
+print(result)

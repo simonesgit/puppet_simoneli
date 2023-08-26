@@ -81,17 +81,17 @@ cleanup_files() {
 }
 
 verify_cleanup() {
-  files_remaining=$(ls -l "$install_path" | wc -l)
+  files_remaining=$(ls -1A "$install_path" | grep -v '^uninstall_bak_CONFIG.dat\.' | wc -l)
   if [[ $files_remaining -gt 1 ]]; then
-    echo "Verify home directory after uninsatlled: " >> "$log_file"
-    ls -l "$install_path" >> "$log_file"
-    status_msg="Warning: $files_remaining files remaining in $install_path. Please check and cleanup manually."
+    echo "Verify home directory after uninstalled: " >> "$log_file"
+    ls -l "$install_path" | grep -v '^uninstall_bak_CONFIG.dat\.' >> "$log_file"
+    status_msg="Warning: $((files_remaining - 1)) files remaining in $install_path. Please check and cleanup manually."
   else
-    remaining_file=$(ls -1 "$install_path")
+    remaining_file=$(ls -1A "$install_path")
     if [[ $remaining_file == uninstall_bak_CONFIG.dat.* ]]; then
       status_msg="Cleanup verification passed, only backup file remains"
     else
-      status_msg="Warning: Unexpected folder/files [ $files_remaining ] remains in $install_path. Please check and cleanup manually."
+      status_msg="Warning: Unexpected folder/files [ $((files_remaining - 1)) ] remains in $install_path. Please check and cleanup manually."
     fi
   fi
 

@@ -1,0 +1,50 @@
+Name: control-m-AGENT-SOURCE
+Version: 9.0.21.100
+Release: 1%{?dist}
+Summary: Control-M Agent source files
+
+Group: Applications/System
+License: GPLv2
+URL: http://example.com ↗
+Source0: ctmag_source.tar
+
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+%description
+This package contains the source files for the Control-M agent.
+
+%prep
+%setup -q
+
+%build
+
+%install
+rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/var/tmp/control-m-agent-source
+tar -xzf ctmag_source.tar -C $RPM_BUILD_ROOT/var/tmp/control-m-agent-source
+
+%files
+/var/tmp/control-m-agent-source
+
+%pre
+getent group controlm >/dev/null || groupadd -r controlm
+
+%post
+chown -R root:controlm /var/tmp/control-m-agent-source
+
+find /var/tmp/control-m-agent-source -type d -exec chmod 755 {} +
+find /var/tmp/control-m-agent-source -type f -exec chmod 644 {} +
+
+find /var/tmp/control-m-agent-source -type f -name "*.sh" -exec chmod 754 {} +
+find /var/tmp/control-m-agent-source -type f -exec dirname {} ; -exec find {} -type f -name "*.sh" -exec chmod 754 {} +
+
+%preun
+
+%postun
+rm -rf /var/tmp/control-m-agent-source
+
+
+%changelog
+
+Wed Jul 13 2022 John Doe jdoe@example.com - 1.0-1
+Initial package release

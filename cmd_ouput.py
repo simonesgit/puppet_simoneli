@@ -26,11 +26,19 @@ def ssh_login(host, username, password):
     except Exception as e:
         print(f'Error occurred while connecting to {host}: {str(e)}')
 
-# List of hosts
-hosts = ['host1', 'host2', 'host3']
+# SSH login credentials
 username = 'your_username'
 password = 'your_password'
 
-for host in hosts:
-    output = ssh_login(host, username, password)
-    print(f'[{host}] Output of `which java`: {output}')
+# Read hosts from file
+with open('Asia-NonProdServers.txt', 'r') as file:
+    hosts = file.read().splitlines()
+
+# Open result file for writing
+with open('result.txt', 'w') as file:
+    for host in hosts:
+        output = ssh_login(host, username, password)
+        output = output.replace('\n', ' ')  # Replace newlines with spaces
+        file.write(f'{host},{output}\n')
+
+print('Results written to result.txt')

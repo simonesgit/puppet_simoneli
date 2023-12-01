@@ -1,0 +1,30 @@
+#!/bin/bash
+
+query_file="query.sql"
+temp_file="/tmp/run_query.sql"
+
+# Check if $1 and $2 are not provided
+if [[ -z "$1" && -z "$2" ]]; then
+  yesterday=$(date -d "yesterday" +"%Y%m%d")
+  timestamp="$yesterday"
+  query_dt_from="$(date -d "yesterday" +"%Y-%m-%d") 00:00:00"
+  query_dt_to="$(date -d "yesterday" +"%Y-%m-%d") 23:59:00"
+# Check if $1 is provided and $2 is not provided
+elif [[ -n "$1" && -z "$2" ]]; then
+  timestamp="$(date -d "$1" +"%Y%m%d")"
+  query_dt_from="$1 00:00:00"
+  query_dt_to="$1 23:59:00"
+# Check if both $1 and $2 are provided
+elif [[ -n "$1" && -n "$2" ]]; then
+  timestamp="$(date -d "$1" +"%Y%m%d")-$(date -d "$2" +"%Y%m%d")"
+  query_dt_from="$1 00:00:00"
+  query_dt_to="$2 23:59:00"
+fi
+
+# Replace placeholders in query.sql and save the modified query to the temporary file
+sed -e "s/##DATE_FROM/$query_dt_from/g" -e "s/##DATE_TO/$query_dt_to/g" "$query_file" > "$temp_file"
+
+echo "TIMESTAMP: $timestamp"
+echo "query_dt_from: $query_dt_from"
+echo "query_dt_to: $query_dt_to"
+echo "Modified query saved to: $temp_file"

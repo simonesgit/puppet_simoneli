@@ -20,6 +20,21 @@ ad_groups_file = 'adgroups.txt'
 # Read and process the ad groups
 groups = read_ad_groups(ad_groups_file)
 
-# Print the unique ad groups
+# Create a list to store the CSV data
+csv_data = [['group', 'CN']]
+
+# Call the CONNECT function for each group and store the output in the CSV data
 for group in groups:
-    print(group)
+    members = CONNECT(group)
+    for member in members:
+        # Extract the CN value from the member string
+        cn_value = member.split(',')[0]
+        csv_data.append([group, cn_value])
+
+# Save the CSV data to a file
+output_file = 'output.csv'
+with open(output_file, 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerows(csv_data)
+
+print(f"The output has been saved to {output_file}")

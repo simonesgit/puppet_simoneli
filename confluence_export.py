@@ -1,30 +1,35 @@
-import adodbapi
+import requests
 
-def generate_report():
-    # Establish a connection to the database
-    db_connection = adodbapi.connect('<your_db_connection_string>')
+def get_confluence_page_content(space_key, page_id=None, page_title=None, username=None, password=None):
+    # Set the Confluence API endpoint
+    api_url = "https://your-confluence-url/rest/api/content"
 
-    # Define the list of AD groups
-    ad_groups = ['group1', 'group2', 'group3']  # Update with your actual AD group names
+    # Set the request headers
+    headers = {
+        "Accept": "application/json"
+    }
 
-    # Execute the query for each AD group and generate the report
-    for ad_group in ad_groups:
-        query = f"SELECT cn, mail FROM <db_connection> WHERE groupMembership = '{ad_group}'"
-        cursor = db_connection.cursor()
-        cursor.execute(query)
-        results = cursor.fetchall()
+    # Set the request parameters
+    params = {
+        "spaceKey": space_key
+    }
 
-        if results:
-            print(f"AD Group: {ad_group}")
-            for result in results:
-                username = result[0]
-                email = result[1]
-                print(f"CN: {username}, Email: {email}")
-        else:
-            print(f"No results found for AD Group: {ad_group}")
+    # Determine if the page ID or title is provided
+    if page_id:
+        params["pageId"] = page_id
+    elif page_title:
+        params["title"] = page_title
 
-    # Close the database connection
-    db_connection.close()
+    # Send the request to get page content
+    response = requests.get(api_url, headers=headers, params=params, auth=(username, password), verify="ca.pem")
+    response.raise_for_status()
 
-# Call the function to generate the report
-generate_report()
+    # Extract the page content from the response
+    page_content = response.json()["results"][0]["body"]["storage"]["value"]
+
+    # Store the page content in a file
+    with open("confluence_page_content.txt", "w", encoding="utf-8") as file:
+        file.write(page_content)
+
+# Usage example
+get_confluence_page_content(space_key="your-space-key", page_id="12345", username="your-username", password="your-password")

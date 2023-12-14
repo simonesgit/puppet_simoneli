@@ -1,35 +1,22 @@
 import requests
 
-def get_confluence_page_content(space_key, page_id=None, page_title=None, username=None, password=None):
-    # Set the Confluence API endpoint
-    api_url = "https://your-confluence-url/rest/api/content"
+# Confluence API configuration
+api_url = "https://your-confluence-url/rest/api"
+username = "your-username"
+password = "your-password"
 
-    # Set the request headers
-    headers = {
-        "Accept": "application/json"
-    }
+# Page ID of the Confluence page
+page_id = "12345678"  # Replace with the actual page ID
 
-    # Set the request parameters
-    params = {
-        "spaceKey": space_key
-    }
+# Set the request URL
+url = f"{api_url}/content/{page_id}?expand=body.storage"
 
-    # Determine if the page ID or title is provided
-    if page_id:
-        params["pageId"] = page_id
-    elif page_title:
-        params["title"] = page_title
+# Send the request to retrieve the page content
+response = requests.get(url, auth=(username, password))
+response.raise_for_status()
 
-    # Send the request to get page content
-    response = requests.get(api_url, headers=headers, params=params, auth=(username, password), verify="ca.pem")
-    response.raise_for_status()
+# Extract the body content from the response
+body_content = response.json()["body"]["storage"]["value"]
 
-    # Extract the page content from the response
-    page_content = response.json()["results"][0]["body"]["storage"]["value"]
-
-    # Store the page content in a file
-    with open("confluence_page_content.txt", "w", encoding="utf-8") as file:
-        file.write(page_content)
-
-# Usage example
-get_confluence_page_content(space_key="your-space-key", page_id="12345", username="your-username", password="your-password")
+# Print the body content
+print(body_content)

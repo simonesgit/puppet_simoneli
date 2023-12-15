@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Project Plan</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .gantt-bar {
+      height: 20px;
+      background-color: #007bff;
+      position: relative;
+      margin-bottom: 5px;
+    }
+    .gantt-bar span {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      color: #fff;
+      padding: 2px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Project Plan</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Project Name</th>
+        <th>Task</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>% Progress</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Project 1</td>
+        <td>Task 1</td>
+        <td>2023-01-01</td>
+        <td>2023-01-10</td>
+        <td>50%</td>
+      </tr>
+      <tr>
+        <td>Project 1</td>
+        <td>Task 2</td>
+        <td>2023-01-11</td>
+        <td>2023-01-20</td>
+        <td>25%</td>
+      </tr>
+      <tr>
+        <td>Project 2</td>
+        <td>Task 1</td>
+        <td>2023-02-01</td>
+        <td>2023-02-15</td>
+        <td>75%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Gantt Chart</h2>
+  <div id="gantt-container"></div>
+
+  <script>
+    // Retrieve the data from the table
+    const tableData = Array.from(document.querySelectorAll('tbody tr')).map(row => ({
+      projectName: row.children[0].textContent,
+      task: row.children[1].textContent,
+      startDate: new Date(row.children[2].textContent),
+      endDate: new Date(row.children[3].textContent),
+      progress: parseInt(row.children[4].textContent),
+    }));
+
+    // Create the Gantt chart
+    const ganttContainer = document.getElementById('gantt-container');
+    tableData.forEach(data => {
+      const ganttBar = document.createElement('div');
+      ganttBar.classList.add('gantt-bar');
+      ganttBar.style.width = `${(data.endDate - data.startDate) / (1000 * 60 * 60 * 24)}%`;
+      ganttBar.innerHTML = `<span>${data.task}</span>`;
+      ganttContainer.appendChild(ganttBar);
+    });
+  </script>
+</body>
+</html>

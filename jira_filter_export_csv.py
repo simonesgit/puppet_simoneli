@@ -15,6 +15,9 @@ ca_file_path = "/path/to/your/ca_file.pem"
 # Set the maximum number of results per page
 max_results = 200
 
+# Fields to filter
+filter_fields = []  # Add the desired field names to this list
+
 # Send HTTP GET request to retrieve Jira filter results
 response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
 
@@ -37,14 +40,26 @@ if response.status_code == 200:
         # Extract the fields dictionary
         fields = issue['fields']
 
-        # Remove fields with 0 contents
-        fields = {key: value for key, value in fields.items() if value}
+        # Filter fields based on filter_fields list
+        if filter_fields:
+            fields = {key: value for key, value in fields.items() if key in filter_fields}
+        else:
+            # Remove fields with no contents
+            fields = {key: value for key, value in fields.items() if value and key != 'keyID'}  # Exclude 'keyID' field
+
+        # Move 'key' field to the beginning of the dictionary
+        if 'key' in fields:
+            key_value = fields.pop('key')
+            fields = {'key': key_value, **fields}
 
         # Append the fields dictionary to the issue_details list
         issue_details.append(fields)
 
     # Create a pandas DataFrame from the issue_details list
     df = pd.DataFrame(issue_details)
+
+    # Reorder columns to have 'key' as the first column
+    df = df[['key'] + [col for col in df.columns if col != 'key']]
 
     # Write the DataFrame to a CSV file
     df.to_csv('jira_filter_results.csv', index=False)

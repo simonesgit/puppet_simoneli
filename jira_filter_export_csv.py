@@ -22,6 +22,10 @@ if response.status_code == 200:
     # Extract the JSON data from the response
     data = response.json()
 
+    # Write the full content of data to a file for debugging
+    with open('jira_filter_json.txt', 'w') as file:
+        file.write(str(data))
+
     # Extract the individual issues from the JSON data
     issues = data['issues']
 

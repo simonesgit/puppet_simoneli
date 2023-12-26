@@ -48,7 +48,7 @@ if response.status_code == 200:
     html_string = soup.prettify()
 
     # Write the HTML string to a file
-    with open('jira_filter_results.html', 'w') as file:
+    with open('jira_filter_results.html', 'w', encoding='utf-8') as file:
         file.write(html_string)
 
     # Print a sample of the DataFrame

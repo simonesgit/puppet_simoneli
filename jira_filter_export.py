@@ -1,8 +1,11 @@
 import requests
 import pandas as pd
+from bs4 import BeautifulSoup
+
 
 # Jira filter URL
-filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter=<filter_id>"
+filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
+filter_id = '234567'
 
 # Jira credentials
 username = "your_username"
@@ -12,7 +15,7 @@ password = "your_password"
 ca_file_path = "/path/to/your/ca_file.pem"
 
 # Send HTTP GET request to retrieve Jira filter results
-response = requests.get(filter_url, auth=(username, password), verify=ca_file_path)
+response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path)
 
 if response.status_code == 200:
     # Extract the JSON data from the response
@@ -35,11 +38,21 @@ if response.status_code == 200:
     # Create a pandas DataFrame from the issue_details list
     df = pd.DataFrame(issue_details)
 
+    # Convert DataFrame to HTML table
+    html_table = df.to_html(index=False)
+
+    # Create BeautifulSoup object
+    soup = BeautifulSoup(html_table, 'html.parser')
+
+    # Create a prettified HTML string
+    html_string = soup.prettify()
+
+    # Write the HTML string to a file
+    with open('jira_filter_results.html', 'w') as file:
+        file.write(html_string)
+
     # Print a sample of the DataFrame
     print(df.head())
-
-    # Export the DataFrame to a CSV file
-    df.to_csv('jira_filter_results.csv', index=False)
 
 else:
     print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)

@@ -5,6 +5,9 @@ import pandas as pd
 filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
 filter_id = '234567'
 
+# Fields to filter
+filter_fields = []  # Add the desired field names to this list
+
 # Jira credentials
 username = "your_username"
 password = "your_password"
@@ -14,9 +17,6 @@ ca_file_path = "/path/to/your/ca_file.pem"
 
 # Set the maximum number of results per page
 max_results = 200
-
-# Fields to filter
-filter_fields = []  # Add the desired field names to this list
 
 # Send HTTP GET request to retrieve Jira filter results
 response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
@@ -58,14 +58,17 @@ if response.status_code == 200:
     # Create a pandas DataFrame from the issue_details list
     df = pd.DataFrame(issue_details)
 
-    # Reorder columns to have 'key' as the first column
-    df = df[['key'] + [col for col in df.columns if col != 'key']]
+    if 'key' in df.columns:
+        # Reorder columns to have 'key' as the first column
+        df = df[['key'] + [col for col in df.columns if col != 'key']]
 
-    # Write the DataFrame to a CSV file
-    df.to_csv('jira_filter_results.csv', index=False)
+        # Write the DataFrame to a CSV file
+        df.to_csv('jira_filter_results.csv', index=False)
 
-    # Print a sample of the DataFrame
-    print(df.head())
+        # Print a sample of the DataFrame
+        print(df.head())
+    else:
+        print("Error occurred while retrieving Jira filter results. The 'key' field is missing in the JSON data.")
 
 else:
     print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)

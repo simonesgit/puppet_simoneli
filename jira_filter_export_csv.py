@@ -37,20 +37,19 @@ if response.status_code == 200:
 
     # Extract all fields from each issue
     for issue in issues:
-        # Extract the fields dictionary
+        # Extract the key and fields from the issue
+        key = issue['key']
         fields = issue['fields']
 
         # Filter fields based on filter_fields list
         if filter_fields:
-            fields = {key: value for key, value in fields.items() if key in filter_fields}
+            fields = {field: value for field, value in fields.items() if field in filter_fields}
         else:
             # Remove fields with no contents
-            fields = {key: value for key, value in fields.items() if value and key != 'keyID'}  # Exclude 'keyID' field
+            fields = {field: value for field, value in fields.items() if value}
 
         # Move 'key' field to the beginning of the dictionary
-        if 'key' in fields:
-            key_value = fields.pop('key')
-            fields = {'key': key_value, **fields}
+        fields = {'key': key, **fields}
 
         # Append the fields dictionary to the issue_details list
         issue_details.append(fields)
@@ -58,17 +57,14 @@ if response.status_code == 200:
     # Create a pandas DataFrame from the issue_details list
     df = pd.DataFrame(issue_details)
 
-    if 'key' in df.columns:
-        # Reorder columns to have 'key' as the first column
-        df = df[['key'] + [col for col in df.columns if col != 'key']]
+    # Reorder columns to have 'key' as the first column
+    df = df[['key'] + [col for col in df.columns if col != 'key']]
 
-        # Write the DataFrame to a CSV file
-        df.to_csv('jira_filter_results.csv', index=False)
+    # Write the DataFrame to a CSV file
+    df.to_csv('jira_filter_results.csv', index=False)
 
-        # Print a sample of the DataFrame
-        print(df.head())
-    else:
-        print("Error occurred while retrieving Jira filter results. The 'key' field is missing in the JSON data.")
+    # Print a sample of the DataFrame
+    print(df.head())
 
 else:
     print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)

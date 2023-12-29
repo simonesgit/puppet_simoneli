@@ -30,7 +30,7 @@ field_id_to_name = {
 }
 
 # Customized field ID to string format mapping
-field_id_to_string = {
+field_dict_to_string = {
     'assignee': ['displayName', 'emailAddress'],
     # Add more fields and their extraction keys as needed
 }
@@ -55,7 +55,7 @@ def extract_field_values(fields):
     Extracts specific values from dictionary-format fields and constructs a string representation.
     """
     extracted_fields = {}
-    for field, extraction_keys in field_id_to_string.items():
+    for field, extraction_keys in field_dict_to_string.items():
         if field in fields and fields[field] is not None and isinstance(fields[field], dict):
             extracted_values = [str(fields[field].get(key, '')) for key in extraction_keys]
             extracted_fields[field] = ' - '.join(extracted_values)
@@ -92,7 +92,7 @@ if response.status_code == 200:
         # Extract specific values from dictionary-format fields and construct a string representation
         extracted_fields = extract_field_values(converted_fields)
 
-        # Add the fields that are not mentioned in field_id_to_string
+        # Add the fields that are not mentioned in field_dict_to_string
         for field, value in converted_fields.items():
             if field not in extracted_fields:
                 extracted_fields[field] = value

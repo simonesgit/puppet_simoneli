@@ -22,6 +22,12 @@ field_id_to_name = {
     # Add more field ID to name mappings as needed
 }
 
+# Field extraction format
+field_extraction_format = {
+    'assignee': ['displayName', 'emailAddress'],
+    # Add more fields and their extraction keys as needed
+}
+
 def convert_field_names(fields):
     """
     Converts the names of customized fields in the given fields dictionary.
@@ -33,6 +39,19 @@ def convert_field_names(fields):
         else:
             converted_fields[field] = value
     return converted_fields
+
+def extract_field_values(fields):
+    """
+    Extracts specific values from dictionary-format fields and constructs a string representation.
+    """
+    extracted_fields = {}
+    for field, extraction_keys in field_extraction_format.items():
+        if field in fields and fields[field] is not None and isinstance(fields[field], dict):
+            extracted_values = [str(fields[field].get(key, '')) for key in extraction_keys]
+            extracted_fields[field] = ' - '.join(extracted_values)
+        else:
+            extracted_fields[field] = fields.get(field, '')
+    return extracted_fields
 
 # Send HTTP GET request to retrieve Jira filter results
 response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
@@ -60,18 +79,21 @@ if response.status_code == 200:
         # Convert the field names in the fields dictionary
         converted_fields = convert_field_names(fields)
 
+        # Extract specific values from dictionary-format fields and construct a string representation
+        extracted_fields = extract_field_values(converted_fields)
+
         # Filter fields based on filter_fields list
         if filter_fields:
-            converted_fields = {field: value for field, value in converted_fields.items() if field in filter_fields}
+            extracted_fields = {field: value for field, value in extracted_fields.items() if field in filter_fields}
         else:
             # Remove fields with no contents
-            converted_fields = {field: value for field, value in converted_fields.items() if value}
+            extracted_fields = {field: value for field, value in extracted_fields.items() if value}
 
         # Move 'key' field to the beginning of the dictionary
-        converted_fields = {'key': key, **converted_fields}
+        extracted_fields = {'key': key, **extracted_fields}
 
         # Append the fields dictionary to the issue_details list
-        issue_details.append(converted_fields)
+        issue_details.append(extracted_fields)
 
     # Create a pandas DataFrame from the issue_details list
     df = pd.DataFrame(issue_details)

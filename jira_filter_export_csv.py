@@ -5,15 +5,16 @@ import pandas as pd
 filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
 filter_id = '234567'
 
-# Jira credentials
-username = "your_username"
-password = "your_password"
+# Read Jira credentials from file
+with open('jira_credentials.txt', 'r') as file:
+    credentials = file.read().splitlines()
 
-# Path to the CA file
-ca_file_path = "/path/to/your/ca_file.pem"
+username = credentials[0]
+password = credentials[1]
 
-# Set the maximum number of results per page
-max_results = 200
+# List of fields to filter
+filter_fields = ['assignee', 'summary', 'status']
+# Add more field names as needed
 
 # Customized field ID to name mapping
 field_id_to_name = {
@@ -23,10 +24,16 @@ field_id_to_name = {
 }
 
 # Field extraction format
-field_extraction_format = {
+field_dict2string = {
     'assignee': ['displayName', 'emailAddress'],
     # Add more fields and their extraction keys as needed
 }
+
+# Path to the CA file
+ca_file_path = "/path/to/your/ca_file.pem"
+
+# Set the maximum number of results per page
+max_results = 200
 
 def convert_field_names(fields):
     """
@@ -45,7 +52,7 @@ def extract_field_values(fields):
     Extracts specific values from dictionary-format fields and constructs a string representation.
     """
     extracted_fields = {}
-    for field, extraction_keys in field_extraction_format.items():
+    for field, extraction_keys in field_dict2string.items():
         if field in fields and fields[field] is not None and isinstance(fields[field], dict):
             extracted_values = [str(fields[field].get(key, '')) for key in extraction_keys]
             extracted_fields[field] = ' - '.join(extracted_values)
@@ -82,7 +89,7 @@ if response.status_code == 200:
         # Extract specific values from dictionary-format fields and construct a string representation
         extracted_fields = extract_field_values(converted_fields)
 
-        # Add the fields that are not mentioned in field_extraction_format
+        # Add the fields that are not mentioned in field_dict2string
         for field, value in converted_fields.items():
             if field not in extracted_fields:
                 extracted_fields[field] = value
@@ -96,8 +103,10 @@ if response.status_code == 200:
     # Create a pandas DataFrame from the issue_details list
     df = pd.DataFrame(issue_details)
 
-    # Reorder columns to have 'key' as the first column
-    df = df[['key'] + [col for col in df.columns if col != 'key']]
+    # Filter columns based on filter_fields if it is not empty
+    if filter_fields:
+        filter_columns = ['key'] + [col for col in df.columns if col in filter_fields]
+        df = df[filter_columns]
 
     # Write the DataFrame to a CSV file
     df.to_csv('jira_filter_results.csv', index=False)

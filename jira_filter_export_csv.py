@@ -1,16 +1,22 @@
 import requests
 import pandas as pd
+import json
 
-# Jira filter URL
+# Define the Jira filter URL
 filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
+
+# Define the path to the CA file
+ca_file_path = "/path/to/your/ca_file.pem"
+
+# Read Jira credentials from JSON file
+with open('jira_credentials.json', 'r') as file:
+    credentials = json.load(file)
+
+username = credentials["username"]
+password = credentials["password"]
+
+# Define the Jira filter ID
 filter_id = '234567'
-
-# Read Jira credentials from file
-with open('jira_credentials.txt', 'r') as file:
-    credentials = file.read().splitlines()
-
-username = credentials[0]
-password = credentials[1]
 
 # List of fields to filter
 filter_fields = ['assignee', 'summary', 'status']
@@ -23,14 +29,11 @@ field_id_to_name = {
     # Add more field ID to name mappings as needed
 }
 
-# Field extraction format
-field_dict2string = {
+# Customized field ID to string format mapping
+field_id_to_string = {
     'assignee': ['displayName', 'emailAddress'],
     # Add more fields and their extraction keys as needed
 }
-
-# Path to the CA file
-ca_file_path = "/path/to/your/ca_file.pem"
 
 # Set the maximum number of results per page
 max_results = 200
@@ -52,7 +55,7 @@ def extract_field_values(fields):
     Extracts specific values from dictionary-format fields and constructs a string representation.
     """
     extracted_fields = {}
-    for field, extraction_keys in field_dict2string.items():
+    for field, extraction_keys in field_id_to_string.items():
         if field in fields and fields[field] is not None and isinstance(fields[field], dict):
             extracted_values = [str(fields[field].get(key, '')) for key in extraction_keys]
             extracted_fields[field] = ' - '.join(extracted_values)
@@ -89,7 +92,7 @@ if response.status_code == 200:
         # Extract specific values from dictionary-format fields and construct a string representation
         extracted_fields = extract_field_values(converted_fields)
 
-        # Add the fields that are not mentioned in field_dict2string
+        # Add the fields that are not mentioned in field_id_to_string
         for field, value in converted_fields.items():
             if field not in extracted_fields:
                 extracted_fields[field] = value

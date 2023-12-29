@@ -82,12 +82,10 @@ if response.status_code == 200:
         # Extract specific values from dictionary-format fields and construct a string representation
         extracted_fields = extract_field_values(converted_fields)
 
-        # Filter fields based on filter_fields list
-        if filter_fields:
-            extracted_fields = {field: value for field, value in extracted_fields.items() if field in filter_fields}
-        else:
-            # Remove fields with no contents
-            extracted_fields = {field: value for field, value in extracted_fields.items() if value}
+        # Add the fields that are not mentioned in field_extraction_format
+        for field, value in converted_fields.items():
+            if field not in extracted_fields:
+                extracted_fields[field] = value
 
         # Move 'key' field to the beginning of the dictionary
         extracted_fields = {'key': key, **extracted_fields}

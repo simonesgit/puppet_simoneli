@@ -126,6 +126,7 @@ if response.status_code == 200:
     df.to_csv('jira_filter.csv', index=False)
 
     print("CSV export completed successfully.")
+    print(df.head())
 else:
     print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)
     print("Responsecontent:", response.content.decode())

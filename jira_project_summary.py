@@ -18,19 +18,19 @@ password = credentials["password"]
 # Define the list of filters
 filters = [
     {
-        'filter_name': 'all_epics',
-        'filter_id': '123456',
-        'filter_fields': ['key', 'summary', 'status', 'ParentLink']
+        'filter_name': 'filter1',
+        'filter_id': '234567',
+        'filter_fields': ['assignee', 'summary', 'status', 'labels']
+    },
+    {
+        'filter_name': 'filter2',
+        'filter_id': '987654',
+        'filter_fields': ['assignee', 'summary', 'priority']
     },
     {
         'filter_name': 'all_initiatives',
-        'filter_id': '234567',
-        'filter_fields': ['key', 'summary', 'status']
-    },
-    {
-        'filter_name': 'all_stories',
-        'filter_id': '345678',
-        'filter_fields': ['key', 'summary', 'status', 'EpicLink']
+        'filter_id': '123456',
+        'filter_fields': ['assignee', 'Project', 'Initiative', 'status', 'labels']
     }
     # Add more filters as needed
 ]
@@ -44,16 +44,17 @@ field_id_to_name = {
 
 # Customized field ID to string format mapping
 field_dict_to_string = {
-    'assignee': ['displayName', 'emailAddress'],
-    # Add more fields and their extraction keys as needed
+    'assignee': [''],
+    # Add more field ID to string format mappings as needed
 }
 
 # Set the maximum number of results per page
-max_results = 200
+max_results_per_page = 100
 
+# Helper function to convert field names
 def convert_field_names(fields):
     """
-    Converts the names of customized fields in the given fields dictionary.
+    Convert field names in the fields dictionary using field_id_to_name mapping.
     """
     converted_fields = {}
     for field, value in fields.items():
@@ -63,9 +64,10 @@ def convert_field_names(fields):
             converted_fields[field] = value
     return converted_fields
 
-def extract_field_values(fields):
+# Helper function to extract specific field values
+def extract_field_values(fields, filter_name):
     """
-    Extracts specific values from dictionary-format fields and constructs a string representation.
+    Extract specific values from dictionary-format fields and construct a string representation.
     """
     extracted_fields = {}
     for field, extraction_keys in field_dict_to_string.items():
@@ -74,34 +76,49 @@ def extract_field_values(fields):
             extracted_fields[field] = ' - '.join(extracted_values)
         else:
             extracted_fields[field] = fields.get(field, '')
+
+    # Apply summary splitting logic for 'all_initiatives' filter
+    if filter_name == 'all_initiatives':
+        summary = fields.get('summary', '')
+        if ' - ' in summary:
+            project, initiative = summary.split(' - ', 1)
+        else:
+            project = 'Others'
+            initiative = ''
+        extracted_fields['Project'] = project
+        extracted_fields['Initiative'] = initiative
+
     return extracted_fields
 
+# Helper function to extract labels and convert them into a string format
 def extract_labels(labels):
     """
-    Extracts labels and converts them into a string format separated by | with spaces.
+    Extract and convert labels field to a string format separated by '|' with spaces.
     """
     if labels is not None and isinstance(labels, list):
         return ' | '.join(labels)
     return ''
 
+# Iterate over the filters list
 for filter_data in filters:
     filter_name = filter_data['filter_name']
     filter_id = filter_data['filter_id']
     filter_fields = filter_data['filter_fields']
 
-    # Send HTTP GET request to retrieve Jira filter results
-    response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
+    # Send an HTTP GET request to retrieve the Jira filter results
+    response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path)
 
+    # Check if the response is successful
     if response.status_code == 200:
         # Extract the JSON data from the response
         data = response.json()
 
-        # Write the full content of data to a file for debugging
-        with open('jira_filter_json.txt', 'w') as file:
-            file.write(str(data))
+        # Write the full content of the data to a file for debugging
+        with open(f'{filter_name}_data.json', 'w') as file:
+            json.dump(data, file, indent=4)
 
         # Extract the individual issues from the JSON data
-        issues = data['issues']
+        issues = data.get('issues', [])
 
         # Create an empty list to store the extracted issue details
         issue_details = []
@@ -116,10 +133,14 @@ for filter_data in filters:
             converted_fields = convert_field_names(fields)
 
             # Extract specific values from dictionary-format fields and construct a string representation
-            extracted_fields = extract_field_values(converted_fields)
+            extracted_fields = extract_field_values(converted_fields, filter_name)
 
-            # Extract and convert labels field to a string separated by | with spaces
+            # Extract and convert labels field toa string separated by | with spaces
             extracted_fields['labels'] = extract_labels(fields.get('labels'))
+
+            # Remove the 'summary' field from the extracted fields for non 'all_initiatives' filters
+            if filter_name != 'all_initiatives':
+                extracted_fields.pop('summary', None)
 
             # Add the fields that are not mentioned in field_dict_to_string
             for field, value in converted_fields.items():
@@ -132,48 +153,18 @@ for filter_data in filters:
             # Append the fields dictionary to the issue_details list
             issue_details.append(extracted_fields)
 
-        # Create a pandas DataFrame from the issue_details list
+        # Create a DataFrame from the issue_details list
         df = pd.DataFrame(issue_details)
 
-        if filter_name == 'all_initiatives':
-            # Extract 'Project' and 'Initiative' from the 'summary' field
-            df[['Project', 'Initiative']] = df['summary'].str.split(' - ', expand=True)
-            df['Project'].fillna('Others', inplace=True)
+        # Reorder the columns
+        column_order = ['key'] + filter_fields
+        df = df[column_order]
 
-            # Remove the 'summary' column from the final result
-            df.drop(columns=['summary'], inplace=True)
+        # Save the DataFrame to a CSV file
+        df.to_csv(f'{filter_name}_issues.csv', index=False)
 
-        # Export the DataFrame to a CSV file with a name based on the filter name
-        df.to_csv(f'{filter_name}.csv', index=False)
-
-        print(f"Exported {filter_name}.csv successfully.")
+        print(f"CSV export for {filter_name} completed successfully. File: {csv_file_name}")
+        print("Head of the DataFrame:")
         print(df.head())
-
     else:
-        print(f"Error retrieving Jira filter results for {filter_name}.")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Content: {response.content}")
-
-# Read the generated reports
-all_initiatives = pd.read_csv('all_initiatives.csv')
-all_epics = pd.read_csv('all_epics.csv')
-
-# Merge information of all_initiatives and all_epics based on 'key' and 'ParentLink'
-merged_data = pd.merge(all_initiatives, all_epics, left_on='key', right_on='ParentLink', how='left', suffixes=('_initiative', '_epic'))
-
-# Rename shared columns with 'initiative_' or 'epic_' prefix
-shared_columns = set(all_initiatives.columns).intersection(set(all_epics.columns))
-for column in shared_columns:
-    merged_data.rename(columns={column: f'initiative_{column}'}, inplace=True)
-
-# Calculate how many story statuses are 'In Progress' for each epic and create 'WIP_stories' column
-wip_stories = all_stories[all_stories['status'] == 'In Progress'].groupby('EpicLink')['key'].count().reset_index()
-wip_stories.rename(columns={'key': 'WIP_stories'}, inplace=True)
-
-# Merge the 'WIP_stories' column with the merged_data DataFrame
-merged_data = pd.merge(merged_data, wip_stories, left_on='key_epic', right_on='EpicLink', how='left')
-
-# Export the final result to 'project_overview_raw.csv'
-merged_data.to_csv('project_overview_raw.csv', index=False)
-print("Exported project_overview_raw.csv successfully.")
-print(merged_data.head())
+        print(f"Error retrieving Jira filter results for {filter_name}. Status code: {response.status_code}. Response content: {response.content}")

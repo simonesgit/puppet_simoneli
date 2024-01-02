@@ -15,12 +15,20 @@ with open('jira_credentials.json', 'r') as file:
 username = credentials["username"]
 password = credentials["password"]
 
-# Define the Jira filter ID
-filter_id = '234567'
-
-# List of fields to filter
-filter_fields = ['assignee', 'summary', 'status', 'labels']
-# Add more field names as needed
+# Define the list of filters
+filters = [
+    {
+        'filter_name': 'filter1',
+        'filter_id': '234567',
+        'filter_fields': ['assignee', 'summary', 'status', 'labels']
+    },
+    {
+        'filter_name': 'filter2',
+        'filter_id': '987654',
+        'filter_fields': ['assignee', 'summary', 'priority']
+    }
+    # Add more filters as needed
+]
 
 # Customized field ID to name mapping
 field_id_to_name = {
@@ -71,62 +79,68 @@ def extract_labels(labels):
         return ' | '.join(labels)
     return ''
 
-# Send HTTP GET request to retrieve Jira filter results
-response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
+for filter_data in filters:
+    filter_name = filter_data['filter_name']
+    filter_id = filter_data['filter_id']
+    filter_fields = filter_data['filter_fields']
 
-if response.status_code == 200:
-    # Extract the JSON data from the response
-    data = response.json()
+    # Send HTTP GET request to retrieve Jira filter results
+    response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
 
-    # Write the full content of data to a file for debugging
-    with open('jira_filter_json.txt', 'w') as file:
-        file.write(str(data))
+    if response.status_code == 200:
+        # Extract the JSON data from the response
+        data = response.json()
 
-    # Extract the individual issues from the JSON data
-    issues = data['issues']
+        # Write the full content of data to a file for debugging
+        with open('jira_filter_json.txt', 'w') as file:
+            file.write(str(data))
 
-    # Create an empty list to store the extracted issue details
-    issue_details = []
+        # Extract the individual issues from the JSON data
+        issues = data['issues']
 
-    # Extract all fields from each issue
-    for issue in issues:
-        # Extract the key and fields from the issue
-        key = issue['key']
-        fields = issue['fields']
+        # Create an empty list to store the extracted issue details
+        issue_details = []
 
-        # Convert the field names in the fields dictionary
-        converted_fields = convert_field_names(fields)
+        # Extract all fields from each issue
+        for issue in issues:
+            # Extract the key and fields from the issue
+            key = issue['key']
+            fields = issue['fields']
 
-        # Extract specific values from dictionary-format fields and construct a string representation
-        extracted_fields = extract_field_values(converted_fields)
+            # Convert the field names in the fields dictionary
+            converted_fields = convert_field_names(fields)
 
-        # Extract and convert labels field to a string separated by | with spaces
-        extracted_fields['labels'] = extract_labels(fields.get('labels'))
+            # Extract specific values from dictionary-format fields and construct a string representation
+            extracted_fields = extract_field_values(converted_fields)
 
-        # Add the fields that are not mentioned in field_dict_to_string
-        for field, value in converted_fields.items():
-            if field not in extracted_fields:
-                extracted_fields[field] = value
+            # Extract and convert labels field to a string separated by | with spaces
+            extracted_fields['labels'] = extract_labels(fields.get('labels'))
 
-        # Move 'key' field to the beginning of the dictionary
-        extracted_fields = {'key': key, **extracted_fields}
+            # Add the fields that are not mentioned in field_dict_to_string
+            for field, value in converted_fields.items():
+                if field not in extracted_fields:
+                    extracted_fields[field] = value
 
-        # Append the fields dictionary to the issue_details list
-        issue_details.append(extracted_fields)
+            # Move 'key' field to the beginning of the dictionary
+            extracted_fields = {'key': key, **extracted_fields}
 
-    # Create a pandas DataFrame from the issue_details list
-    df = pd.DataFrame(issue_details)
+            # Append the fields dictionary to the issue_details list
+            issue_details.append(extracted_fields)
 
-    # Filter columns based on filter_fields if it is not empty
-    if filter_fields:
-        filter_columns = ['key'] + [col for col in df.columns if col in filter_fields]
-        df = df[filter_columns]
+        # Create a pandas DataFrame from the issue_details list
+        df = pd.DataFrame(issue_details)
 
-    # Write the DataFrame to a CSV file
-    df.to_csv('jira_filter.csv', index=False)
+        # Filter columns based on filter_fields if it is not empty
+        if filter_fields:
+            filter_columns = ['key'] + [col for col in df.columns if col in filter_fields]
+            df = dfcontd...
 
-    print("CSV export completed successfully.")
-    print(df.head())
-else:
-    print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)
-    print("Responsecontent:", response.content.decode())
+        # Write the DataFrame to a CSV file
+        csv_file_name = f"{filter_name}_result.csv"
+        df.to_csv(csv_file_name, index=False)
+
+        print(f"CSV export for {filter_name} completed successfully. File: {csv_file_name}")
+        print("Head of the DataFrame:")
+        print(df.head())
+    else:
+        print(f"Error retrieving Jira filter results for {filter_name}. Status code: {response.status_code}. Response content: {response.content}")

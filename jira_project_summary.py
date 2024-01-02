@@ -108,69 +108,58 @@ def calculate_wip_stories(df):
     df['WIP_stories'] = df['EpicLink'].map(wip_stories).fillna(0)
     return df
 
-for filter_data in filters:
-    filter_name = filter_data['filter_name']
-    filter_id = filter_data['filter_id']
-    filter_fields = filter_data['filter_fields']
+def retrieve_jira_filter_results(filter_name, filter_id):
+    filter_url = f"https://your-jira-instance/rest/api/2/search?jql=filter={filter_id}"
 
     # Send HTTP GET request to retrieve Jira filter results
-    response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
+    response = requests.get(filter_url, auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
 
     if response.status_code == 200:
-        #Extract the JSON data from the response
-        data = response.json()
-
-        # Write the full content of data to a file for debugging
-        with open('jira_filter_json.txt', 'w') as file:
-            file.write(str(data))
-
-        # Extract the individual issues from the JSON data
-        issues = data['issues']
-
-        # Create an empty list to store the extracted issue details
-        issue_details = []
-
-        # Extract all fields from each issue
+        # Filter results retrieved successfully
+        print(f"Jira filter results for {filter_name} retrieved successfully.")
+        response_json = response.json()
+        issues = response_json.get("issues", [])
+    
+        # Extract and process the relevant fields from each issue
+        data = []
         for issue in issues:
-            # Extract the key and fields from the issue
-            key = issue['key']
-            fields = issue['fields']
-
-            # Convert the field names in the fields dictionary
+            fields = issue.get("fields", {})
             converted_fields = convert_field_names(fields)
-
-            # Extract specific values from dictionary-format fields and construct a string representation
             extracted_fields = extract_field_values(converted_fields)
-
-            # Extract and convert labels field to a string separated by | with spaces
-            extracted_fields['labels'] = extract_labels(fields.get('labels'))
-
-            # Add the fields that are not mentioned in field_dict_to_string
-            for field, value in converted_fields.items():
-                if field not in extracted_fields:
-                    extracted_fields[field] = value
-
-            # Move 'key' field to the beginning of the dictionary
-            extracted_fields = {'key': key, **extracted_fields}
-
-            # Append the fields dictionary to the issue_details list
-            issue_details.append(extracted_fields)
-
-        # Create a pandas DataFrame from the issue_details list
-        df = pd.DataFrame(issue_details)
-
-        # Filter columns based on filter_fields if it is not empty
-        if filter_fields:
-            filter_columns = ['key'] + [col for col in df.columns if col in filter_fields]
-            df = df[filter_columns]
-
-        if filter_name == 'all_initiatives':
+            extracted_fields["labels"] = extract_labels(fields.get("labels"))
+            data.append(extracted_fields)
+    
+        # Create a DataFrame from the extracted data
+        df = pd.DataFrame(data)
+        
+        # Process the DataFrame based on the filter name
+        if filter_name == "all_initiatives":
             df = process_initiatives(df)
-        elif filter_name == 'all_epics':
-            epics_df = df
-        elif filter_name == 'all_stories':
-            stories_df = df
+        elif filter_name == "all_epics":
+            pass  # Additional processing for the 'all_epics' filter can be added here
+        elif filter_name == "all_stories":
+            df = calculate_wip_stories(df)
+        
+        # Print the resulting DataFrame
+        print(f"DataFrame for {filter_name}:")
+        print(df)
+        print()
+    else:
+        # Error retrieving Jira filter results
+        print(f"Error retrieving Jira filter results for {filter_name}.")
+        print(f"Status code: {response.status_code}")
+        print("Response content:")
+        print(response.content)
 
+# Iterate over the list of filters
+for filter_info in filters:
+    filter_name = filter_info['filter_name']
+    filter_id = filter_info['filter_id']
+    filter_fields = filter_info['filter_fields']
+    
+    # Call retrieve_jira_filter_results() function
+    retrieve_jira_filter_results(filter_name, filter_id, filter_fields)
+    
 # Merge 'all_initiatives' and 'all_epics' DataFrames
 merged_df = merge_dataframes(initiatives_df, epics_df)
 

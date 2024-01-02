@@ -18,19 +18,19 @@ password = credentials["password"]
 # Define the list of filters
 filters = [
     {
-        'filter_name': 'all_initiatives',
-        'filter_id': '234567',
-        'filter_fields': ['assignee', 'summary', 'status', 'labels']
+        'filter_name': 'all_epics',
+        'filter_id': '123456',
+        'filter_fields': ['key', 'summary', 'status', 'ParentLink']
     },
     {
-        'filter_name': 'all_epics',
-        'filter_id': '987654',
-        'filter_fields': ['assignee', 'summary', 'priority', 'ParentLink']
+        'filter_name': 'all_initiatives',
+        'filter_id': '234567',
+        'filter_fields': ['key', 'summary', 'status']
     },
     {
         'filter_name': 'all_stories',
-        'filter_id': '876543',
-        'filter_fields': ['assignee', 'summary', 'priority', 'EpicLink', 'status']
+        'filter_id': '345678',
+        'filter_fields': ['key', 'summary', 'status', 'EpicLink']
     }
     # Add more filters as needed
 ]
@@ -84,78 +84,96 @@ def extract_labels(labels):
         return ' | '.join(labels)
     return ''
 
-def process_initiatives(df):
-    """
-    Process the 'all_initiatives' DataFrame by adding 'Project' and 'Initiative' columns and removing 'summary' column.
-    """
-    df['Project'] = df['summary'].apply(lambda x: x.split(' - ')[0] if ' - ' in x else 'Others')
-    df['Initiative'] = df['summary'].apply(lambda x: x.split(' - ')[1] if ' - ' in x else '')
-    df.drop('summary', axis=1, inplace=True)
-    return df
-
-def merge_dataframes(initiatives_df, epics_df):
-    """
-    Merge the 'all_initiatives' and 'all_epics' DataFrames based on 'ParentLink' and add prefix to shared column names.
-    """
-    merged_df = pd.merge(initiatives_df, epics_df, left_on='key', right_on='ParentLink', how='left', suffixes=('_initiative', '_epic'))
-    return merged_df
-
-def calculate_wip_stories(df):
-    """
-    Calculate the number of stories with status 'In Progress' for each epic and add it as the 'WIP_stories' column.
-    """
-    wip_stories = df[df['status'] == 'In Progress'].groupby('EpicLink')['EpicLink'].count()
-    df['WIP_stories'] = df['EpicLink'].map(wip_stories).fillna(0)
-    return df
-
-def retrieve_jira_filter_results(filter_name, filter_id):
-    filter_url = f"https://your-jira-instance/rest/api/2/search?jql=filter={filter_id}"
+for filter_data in filters:
+    filter_name = filter_data['filter_name']
+    filter_id = filter_data['filter_id']
+    filter_fields = filter_data['filter_fields']
 
     # Send HTTP GET request to retrieve Jira filter results
-    response = requests.get(filter_url, auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
+    response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
 
     if response.status_code == 200:
-        # Filter results retrieved successfully
-        print(f"Jira filter results for {filter_name} retrieved successfully.")
-        response_json = response.json()
-        issues = response_json.get("issues", [])
-    
-        # Extract and process the relevant fields from each issue
-        data = []
+        # Extract the JSON data from the response
+        data = response.json()
+
+        # Write the full content of data to a file for debugging
+        with open('jira_filter_json.txt', 'w') as file:
+            file.write(str(data))
+
+        # Extract the individual issues from the JSON data
+        issues = data['issues']
+
+        # Create an empty list to store the extracted issue details
+        issue_details = []
+
+        # Extract all fields from each issue
         for issue in issues:
-            fields = issue.get("fields", {})
+            # Extract the key and fields from the issue
+            key = issue['key']
+            fields = issue['fields']
+
+            # Convert the field names in the fields dictionary
             converted_fields = convert_field_names(fields)
+
+            # Extract specific values from dictionary-format fields and construct a string representation
             extracted_fields = extract_field_values(converted_fields)
-            extracted_fields["labels"] = extract_labels(fields.get("labels"))
-            data.append(extracted_fields)
-    
-        # Create a DataFrame from the extracted data
-        df = pd.DataFrame(data)
-        
-        # Process the DataFrame based on the filter name
-        if filter_name == "all_initiatives":
-            df = process_initiatives(df)
-        elif filter_name == "all_epics":
-            pass  # Additional processing for the 'all_epics' filter can be added here
-        elif filter_name == "all_stories":
-            df = calculate_wip_stories(df)
-        
-        # Print the resulting DataFrame
-        print(f"DataFrame for {filter_name}:")
-        print(df)
-        print()
+
+            # Extract and convert labels field to a string separated by | with spaces
+            extracted_fields['labels'] = extract_labels(fields.get('labels'))
+
+            # Add the fields that are not mentioned in field_dict_to_string
+            for field, value in converted_fields.items():
+                if field not in extracted_fields:
+                    extracted_fields[field] = value
+
+            # Move 'key' field to the beginning of the dictionary
+            extracted_fields = {'key': key, **extracted_fields}
+
+            # Append the fields dictionary to the issue_details list
+            issue_details.append(extracted_fields)
+
+        # Create a pandas DataFrame from the issue_details list
+        df = pd.DataFrame(issue_details)
+
+        if filter_name == 'all_initiatives':
+            # Extract 'Project' and 'Initiative' from the 'summary' field
+            df[['Project', 'Initiative']] = df['summary'].str.split(' - ', expand=True)
+            df['Project'].fillna('Others', inplace=True)
+
+            # Remove the 'summary' column from the final result
+            df.drop(columns=['summary'], inplace=True)
+
+        # Export the DataFrame to a CSV file with a name based on the filter name
+        df.to_csv(f'{filter_name}.csv', index=False)
+
+        print(f"Exported {filter_name}.csv successfully.")
+        print(df.head())
+
     else:
-        # Error retrieving Jira filter results
         print(f"Error retrieving Jira filter results for {filter_name}.")
-        print(f"Status code: {response.status_code}")
-        print("Response content:")
-        print(response.content)
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Content: {response.content}")
 
-# Merge 'all_initiatives' and 'all_epics' DataFrames
-merged_df = merge_dataframes(initiatives_df, epics_df)
+# Read the generated reports
+all_initiatives = pd.read_csv('all_initiatives.csv')
+all_epics = pd.read_csv('all_epics.csv')
 
-# Calculate WIP stories for each epic
-final_df = calculate_wip_stories(merged_df)
+# Merge information of all_initiatives and all_epics based on 'key' and 'ParentLink'
+merged_data = pd.merge(all_initiatives, all_epics, left_on='key', right_on='ParentLink', how='left', suffixes=('_initiative', '_epic'))
 
-# Export final result to CSV file
-final_df.to_csv('project_overview_raw.csv', index=False)
+# Rename shared columns with 'initiative_' or 'epic_' prefix
+shared_columns = set(all_initiatives.columns).intersection(set(all_epics.columns))
+for column in shared_columns:
+    merged_data.rename(columns={column: f'initiative_{column}'}, inplace=True)
+
+# Calculate how many story statuses are 'In Progress' for each epic and create 'WIP_stories' column
+wip_stories = all_stories[all_stories['status'] == 'In Progress'].groupby('EpicLink')['key'].count().reset_index()
+wip_stories.rename(columns={'key': 'WIP_stories'}, inplace=True)
+
+# Merge the 'WIP_stories' column with the merged_data DataFrame
+merged_data = pd.merge(merged_data, wip_stories, left_on='key_epic', right_on='EpicLink', how='left')
+
+# Export the final result to 'project_overview_raw.csv'
+merged_data.to_csv('project_overview_raw.csv', index=False)
+print("Exported project_overview_raw.csv successfully.")
+print(merged_data.head())

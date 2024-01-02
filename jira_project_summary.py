@@ -151,15 +151,6 @@ def retrieve_jira_filter_results(filter_name, filter_id):
         print("Response content:")
         print(response.content)
 
-# Iterate over the list of filters
-for filter_info in filters:
-    filter_name = filter_info['filter_name']
-    filter_id = filter_info['filter_id']
-    filter_fields = filter_info['filter_fields']
-    
-    # Call retrieve_jira_filter_results() function
-    retrieve_jira_filter_results(filter_name, filter_id, filter_fields)
-    
 # Merge 'all_initiatives' and 'all_epics' DataFrames
 merged_df = merge_dataframes(initiatives_df, epics_df)
 

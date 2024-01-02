@@ -127,4 +127,5 @@ if response.status_code == 200:
 
     print("CSV export completed successfully.")
 else:
-    print("Failed to retrieve Jira filter results.")
+    print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)
+    print("Responsecontent:", response.content.decode())

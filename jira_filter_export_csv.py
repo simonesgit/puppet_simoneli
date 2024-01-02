@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import json
+import csv
 
 # Define the Jira filter URL
 filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
@@ -19,7 +20,7 @@ password = credentials["password"]
 filter_id = '234567'
 
 # List of fields to filter
-filter_fields = ['assignee', 'summary', 'status']
+filter_fields = ['assignee', 'summary', 'status', 'labels']
 # Add more field names as needed
 
 # Customized field ID to name mapping
@@ -63,6 +64,14 @@ def extract_field_values(fields):
             extracted_fields[field] = fields.get(field, '')
     return extracted_fields
 
+def extract_labels(labels):
+    """
+    Extracts labels and converts them into a normal string format.
+    """
+    if labels is not None and isinstance(labels, list):
+        return ','.join(csv.escape(label) for label in labels)
+    return ''
+
 # Send HTTP GET request to retrieve Jira filter results
 response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path, params={'maxResults': max_results})
 
@@ -92,6 +101,9 @@ if response.status_code == 200:
         # Extract specific values from dictionary-format fields and construct a string representation
         extracted_fields = extract_field_values(converted_fields)
 
+        # Extract and convert labels field to a normal string
+        extracted_fields['labels'] = extract_labels(fields.get('labels'))
+
         # Add the fields that are not mentioned in field_dict_to_string
         for field, value in converted_fields.items():
             if field not in extracted_fields:
@@ -119,4 +131,4 @@ if response.status_code == 200:
 
 else:
     print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)
-    print("Response content:", response.content.decode())
+    print("Responsecontent:", response.content.decode())

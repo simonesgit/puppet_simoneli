@@ -1,7 +1,6 @@
 import requests
 import pandas as pd
 import json
-import csv
 
 # Define the Jira filter URL
 filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
@@ -66,10 +65,10 @@ def extract_field_values(fields):
 
 def extract_labels(labels):
     """
-    Extracts labels and converts them into a normal string format.
+    Extracts labels and converts them into a string format separated by | with spaces.
     """
     if labels is not None and isinstance(labels, list):
-        return ','.join(csv.escape(label) for label in labels)
+        return ' | '.join(labels)
     return ''
 
 # Send HTTP GET request to retrieve Jira filter results
@@ -101,7 +100,7 @@ if response.status_code == 200:
         # Extract specific values from dictionary-format fields and construct a string representation
         extracted_fields = extract_field_values(converted_fields)
 
-        # Extract and convert labels field to a normal string
+        # Extract and convert labels field to a string separated by | with spaces
         extracted_fields['labels'] = extract_labels(fields.get('labels'))
 
         # Add the fields that are not mentioned in field_dict_to_string
@@ -124,11 +123,8 @@ if response.status_code == 200:
         df = df[filter_columns]
 
     # Write the DataFrame to a CSV file
-    df.to_csv('jira_filter_results.csv', index=False)
+    df.to_csv('jira_filter.csv', index=False)
 
-    # Print a sample of the DataFrame
-    print(df.head())
-
+    print("CSV export completed successfully.")
 else:
-    print("Error occurred while retrieving Jira filter results. Status code:", response.status_code)
-    print("Responsecontent:", response.content.decode())
+    print("Failed to retrieve Jira filter results.")

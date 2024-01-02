@@ -133,7 +133,7 @@ for filter_data in filters:
         # Filter columns based on filter_fields if it is not empty
         if filter_fields:
             filter_columns = ['key'] + [col for col in df.columns if col in filter_fields]
-            df = dfcontd...
+            df = df[filter_columns]
 
         # Write the DataFrame to a CSV file
         csv_file_name = f"{filter_name}_result.csv"

@@ -18,19 +18,19 @@ password = credentials["password"]
 # Define the list of filters
 filters = [
     {
-        'filter_name': 'all_epics',
-        'filter_id': '123456',
-        'filter_fields': ['assignee', 'summary', 'status', 'labels', 'ParentLink']
+        'filter_name': 'all_initiatives',
+        'filter_id': '342495',
+        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'TargetStart', 'TargetEnd', 'StartDate', 'EndDate']
     },
     {
-        'filter_name': 'all_initiatives',
-        'filter_id': '234567',
-        'filter_fields': ['assignee', 'summary', 'status', 'labels', 'key']
+        'filter_name': 'all_epics',
+        'filter_id': '342493',
+        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'ParentLink', 'ResolutionNote', 'created', 'EpicName', 'description', 'resolution', 'progress', 'TargetStart', 'TargetEnd', 'StartDate', 'EndDate']
     },
     {
         'filter_name': 'all_stories',
-        'filter_id': '345678',
-        'filter_fields': ['assignee', 'summary', 'status', 'labels', 'EpicLink']
+        'filter_id': '342671',
+        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'EpicLink', 'StoryPoints', 'StartDate', 'EndDate', 'assignee', 'AdditionalAssignee']
     }
     # Add more filters as needed
 ]
@@ -161,7 +161,7 @@ for filter_data in filters:
         df = df[column_order]
 
         # Save the DataFrame to a CSV file
-        df.to_csv(f'{filter_name}_issues.csv', index=False)
+        df.to_csv(f'export_{filter_name}.csv', index=False)
 
         print(f"CSV export for {filter_name} completed successfully. File: {csv_file_name}")
         print("Head of the DataFrame:")
@@ -169,36 +169,3 @@ for filter_data in filters:
     else:
         print(f"Error retrieving Jira filter results for {filter_name}. Status code: {response.status_code}. Response content: {response.content}")
 
-
-
-# Read the CSV files into DataFrames
-dfs = {}
-for filter_data in filters:
-    filter_name = filter_data['filter_name']
-    df = pd.read_csv(f'{filter_name}_issues.csv')
-    dfs[filter_name] = df
-
-# Merge all_initiatives and all_epics by associating all_initiatives.key and all_epics.ParentLink
-if 'all_initiatives' in dfs and 'all_epics' in dfs:
-    all_initiatives_df = dfs['all_initiatives']
-    all_epics_df = dfs['all_epics']
-    merged_df = pd.merge(all_initiatives_df, all_epics_df, left_on='key', right_on='ParentLink', suffixes=('_initiative', '_epic'))
-else:
-    raise ValueError("Missing all_initiatives or all_epics DataFrame")
-
-# Calculate the number of 'In Progress' stories for each epic
-if 'all_stories' in dfs:
-    all_stories_df = dfs['all_stories']
-    in_progress_stories = all_stories_df[all_stories_df['status'] == 'In Progress']
-    wip_stories = in_progress_stories.groupby('EpicLink').size().reset_index(name='WIP_stories')
-    merged_df = pd.merge(merged_df, wip_stories, left_on='key_epic', right_on='EpicLink', how='left')
-else:
-    raise ValueError("Missing all_stories DataFrame")
-
-# Add prefix to the column names of all_initiatives and all_epics
-merged_df = merged_df.add_prefix('initiative_')
-merged_df.rename(columns={'initiative_key_initiative': 'key_initiative'}, inplace=True)
-merged_df.rename(columns={'initiative_key_epic': 'key_epic'}, inplace=True)
-
-# Export the final result as 'project_overview_raw.csv'
-merged_df.to_csv('project_overview_raw.csv', index=False)

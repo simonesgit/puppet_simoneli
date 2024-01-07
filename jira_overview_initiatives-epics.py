@@ -18,10 +18,49 @@ story_counts = stories_df['S_EpicLink'].value_counts().reset_index()
 story_counts.columns = ['E_key', 'activeStories']
 overview_df = overview_df.merge(story_counts, how='left', on='E_key')
 
-# Step 5: Calculate the number of 'In Progress' stories per epic
-wip_story_counts = stories_df[stories_df['S_status'] == 'In Progress']['S_EpicLink'].value_counts().reset_index()
-wip_story_counts.columns = ['E_key', 'wipStories']
-overview_df = overview_df.merge(wip_story_counts, how='left', on='E_key')
+# Step 5: Calculate the number of 'In Progress' and 'Completed' stories per epic
+in_progress_completed_story_counts = stories_df[stories_df['S_status'].isin(['In Progress', 'Completed'])]['S_EpicLink'].value_counts().reset_index()
+in_progress_completed_story_counts.columns = ['E_key', 'wipStories']
+overview_df = overview_df.merge(in_progress_completed_story_counts, how='left', on='E_key')
 
-# Step 6: Save the overview dataframe to a CSV file
-overview_df.to_csv('export_overview_initiatives-epics.csv', index=False)
+# Step 6: Reorganize the column sequence
+column_sequence = ['I_key', 'I_assignee', 'I_summary', 'I_priority', 'I_status', 'I_labels',
+                   'E_key', 'E_assignee', 'E_summary', 'E_priority', 'E_status', 'E_labels', 'E_ParentLink',
+                   'E_ResolutionNote', 'E_created', 'E_EpicName', 'E_description', 'E_resolution', 'E_progress',
+                   'E_TargetStart', 'E_TargetEnd', 'E_StartDate', 'E_EndDate',
+                   'activeStories', 'wipStories']
+overview_df = overview_df[column_sequence]
+
+# Step 7: Update I_TargetStart and I_TargetEnd based on E_TargetStart and E_TargetEnd
+warn_message = "Value updated: "
+for index, row in overview_df.iterrows():
+    i_target_start = row['I_TargetStart']
+    e_target_start = row['E_TargetStart']
+    if pd.notnull(e_target_start) and (pd.isnull(i_target_start) or e_target_start < i_target_start):
+        overview_df.at[index, 'I_TargetStart'] = e_target_start
+        warn_message += f"I_Key: {row['I_key']}, E_TargetStart: {e_target_start}, "
+    
+    i_target_end = row['I_TargetEnd']
+    e_target_end = row['E_TargetEnd']
+    if pd.notnull(e_target_end) and (pd.isnull(i_target_end) or e_target_end > i_target_end):
+        overview_df.at[index, 'I_TargetEnd'] = e_target_end
+        warn_message += f"I_Key: {row['I_key']}, E_TargetEnd: {e_target_end}, "
+        
+if warn_message != "Value updated: ":
+    print(warn_message[:-2])  # Print warning message if any values were updated
+
+# Step 8: Create the gantt dataframe
+df_gantt = pd.DataFrame(columns=['I_key', 'objective_key', 'objective', 'TargetStart', 'TargetEnd'])
+
+# Step 9: Add rows to the gantt dataframe
+df_gantt = df_gantt.append({'I_key': 'CONTROMPM-0000', 'objective_key': 'I_key', 'objective': 'Others',
+                            'TargetStart': '', 'TargetEnd': ''}, ignore_index=True)
+
+for index, row in overview_df.iterrows():
+    df_gantt = df_gantt.append({'I_key': row['I_key'], 'objective_key': row['I_key'], 'objective': row['I_summary'],
+                                'TargetStart': row['I_TargetStart'], 'TargetEnd': row['I_TargetEnd']}, ignore_index=True)
+    df_gantt = df_gantt.append({'I_key': row['I_key'], 'objective_key': row['E_key'], 'objective': row['E_summary'],
+                                'TargetStart': row['E_TargetStart'], 'TargetEnd': row['E_TargetEnd']}, ignore_index=True)
+
+# Step 10: Save the gantt dataframe to a CSV file
+df_gantt.to_csv('export_gantt_initiative-epics.csv', index=False)

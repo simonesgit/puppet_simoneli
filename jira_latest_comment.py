@@ -9,8 +9,8 @@ jira_api_endpoint = 'https://your-jira-instance/rest/api/2'
 with open('credentials.txt', 'r') as file:
     credentials = json.load(file)
 
-# SSL verification using a PEM file
-pem_file = '/path/to/your/pem/file.pem'
+# SSL verification using a CA file
+ca_file_path = '/path/to/your/ca/file.pem'
 
 
 def get_latest_comment(issue_key):
@@ -22,7 +22,7 @@ def get_latest_comment(issue_key):
 
     # Make the API request
     response = requests.get(api_url, headers={'Content-Type': 'application/json'},
-                            auth=(credentials['username'], credentials['password']), verify=pem_file)
+                            auth=(credentials['username'], credentials['password']), verify=ca_file_path)
 
     if response.status_code == 200:
         # Parse the response

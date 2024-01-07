@@ -27,7 +27,7 @@ filters = [
     {
         'filter_name': 'all_epics',
         'filter_id': '342493',
-        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'ParentLink', 'ResolutionNote', 'created', 'EpicName', 'description', 'resolution', 'progress', 'TargetStart', 'TargetEnd', 'StartDate', 'EndDate']
+        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'ParentLink', 'ResolutionNote', 'created', 'EpicName', 'description', 'resolution', 'progress', 'TargetStart', 'TargetEnd', 'StartDate', 'EndDate', 'AdditionalAssignee']
     },
     {
         'filter_name': 'all_stories',

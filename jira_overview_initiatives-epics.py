@@ -12,8 +12,16 @@ stories_df = stories_df.add_prefix('S_')
 
 # Step 3: Create a new dataframe to join initiatives and epics information
 overview_df = epics_df.merge(initiatives_df, how='left', left_on='E_ParentLink', right_on='I_key')
-overview_df['openStories'] = overview_df.groupby('E_key')['E_key'].transform('count')
-overview_df['wipStories'] = overview_df.groupby('E_key')['E_status'].transform(lambda x: (x == 'In Progress').sum())
 
-# Step 4: Save the overview dataframe to a CSV file
-overview_df.to_csv('overview_initiatives-epics.csv', index=False)
+# Step 4: Merge stories_df to get story counts per epic
+story_counts = stories_df['S_EpicLink'].value_counts().reset_index()
+story_counts.columns = ['E_key', 'activeStories']
+overview_df = overview_df.merge(story_counts, how='left', on='E_key')
+
+# Step 5: Calculate the number of 'In Progress' stories per epic
+wip_story_counts = stories_df[stories_df['S_status'] == 'In Progress']['S_EpicLink'].value_counts().reset_index()
+wip_story_counts.columns = ['E_key', 'wipStories']
+overview_df = overview_df.merge(wip_story_counts, how='left', on='E_key')
+
+# Step 6: Save the overview dataframe to a CSV file
+overview_df.to_csv('export_overview_initiatives-epics.csv', index=False)

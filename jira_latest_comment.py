@@ -1,6 +1,7 @@
 import csv
 import requests
 import json
+from tqdm import tqdm
 
 # Global variables
 jira_api_endpoint = 'https://your-jira-instance/rest/api/2'
@@ -52,11 +53,13 @@ def get_latest_comments(csv_file_name, issue_key_column):
     with open(csv_file_name, 'r', encoding='utf-8') as file:
         csv_reader = csv.DictReader(file)
         fieldnames = csv_reader.fieldnames + ['last_comment']
+        total_rows = sum(1 for _ in csv_reader)  # Count total rows in the CSV file
 
-        for row in csv_reader:
+    with open(csv_file_name, 'r', encoding='utf-8') as file:
+        csv_reader = csv.DictReader(file)
+        for row in tqdm(csv_reader, total=total_rows, unit='row'):
             issue_key = row[issue_key_column]
             summary = row['E_summary']
-            print(f"Processing Issue Key: {issue_key}, Summary: {summary}")
             last_comment = get_latest_comment(issue_key)
             row['last_comment'] = last_comment
             updated_rows.append(row)

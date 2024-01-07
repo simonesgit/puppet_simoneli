@@ -1,17 +1,24 @@
+import csv
 import requests
 import json
 
+# Global variables
+jira_api_endpoint = 'https://your-jira-instance/rest/api/2'
+
+# Read credentials from a file
+with open('credentials.txt', 'r') as file:
+    credentials = json.load(file)
+
+# SSL verification using a PEM file
+pem_file = '/path/to/your/pem/file.pem'
+
 
 def get_latest_comment(issue_key):
-    # Read credentials from a file
-    with open('credentials.txt', 'r') as file:
-        credentials = json.load(file)
-
     # API endpoint
-    api_url = f"https://your-jira-instance/rest/api/2/issue/{issue_key}/comment"
+    api_url_template = f"{jira_api_endpoint}/issue/{{}}/comment"
 
-    # SSL verification using a PEM file
-    pem_file = '/path/to/your/pem/file.pem'
+    # Construct the API endpoint for the specific issue
+    api_url = api_url_template.format(issue_key)
 
     # Make the API request
     response = requests.get(api_url, headers={'Content-Type': 'application/json'},
@@ -21,17 +28,48 @@ def get_latest_comment(issue_key):
         # Parse the response
         comments = response.json()['comments']
         latest_comment = comments[-1]['body'] if comments else "No comments found."
-        return latest_comment
+        formatted_comment = format_comment(latest_comment)
+        return formatted_comment
     else:
         return f"Error: {response.status_code} - {response.text}"
 
 
-if __name__ == '__main__':
-    # Main function
-    def main():
-        issue_key = input("Enter the issue key: ")
-        latest_comment = get_latest_comment(issue_key)
-        print(f"The latest comment for issue {issue_key} is:\n{latest_comment}")
+def format_comment(comment):
+    lines = comment.split('\n')
+    formatted_lines = []
 
-    # Call the main function
-    main()
+    for line in lines:
+        if line.startswith(' * '):
+            line = '  - ' + line[3:]
+        formatted_lines.append(line)
+
+    return '\n'.join(formatted_lines)
+
+
+def get_latest_comments(csv_file_name, issue_key_column):
+    updated_rows = []
+
+    with open(csv_file_name, 'r') as file:
+        csv_reader = csv.DictReader(file)
+        fieldnames = csv_reader.fieldnames + ['last_comment']
+
+        for row in csv_reader:
+            issue_key = row[issue_key_column]
+            last_comment = get_latest_comment(issue_key)
+            row['last_comment'] = last_comment
+            updated_rows.append(row)
+
+    with open(csv_file_name, 'w', newline='') as file:
+        csv_writer = csv.DictWriter(file, fieldnames=fieldnames)
+        csv_writer.writeheader()
+        csv_writer.writerows(updated_rows)
+
+
+if __name__ == '__main__':
+    # CSV file name and issue key column
+    csv_file_name = 'issues.csv'
+    issue_key_column = 'issue_key'
+
+    # Call the function to update the CSV file
+    get_latest_comments(csv_file_name, issue_key_column)
+    print(f"CSV file '{csv_file_name}' has been updated with the latest comments.")

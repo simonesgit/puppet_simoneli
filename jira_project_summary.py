@@ -49,7 +49,7 @@ field_dict_to_string = {
 }
 
 # Set the maximum number of results per page
-max_results_per_page = 100
+max_results_per_page = 400
 
 # Helper function to convert field names
 def convert_field_names(fields):
@@ -163,7 +163,7 @@ for filter_data in filters:
         # Save the DataFrame to a CSV file
         df.to_csv(f'export_{filter_name}.csv', index=False)
 
-        print(f"CSV export for {filter_name} completed successfully. File: {csv_file_name}")
+        print(f"CSV export for {filter_name} completed successfully. File: export_{filter_name}.csv")
         print("Head of the DataFrame:")
         print(df.head())
     else:

@@ -49,17 +49,19 @@ def format_comment(comment):
 def get_latest_comments(csv_file_name, issue_key_column):
     updated_rows = []
 
-    with open(csv_file_name, 'r') as file:
+    with open(csv_file_name, 'r', encoding='utf-8') as file:
         csv_reader = csv.DictReader(file)
         fieldnames = csv_reader.fieldnames + ['last_comment']
 
         for row in csv_reader:
             issue_key = row[issue_key_column]
+            summary = row['E_summary']
+            print(f"Processing Issue Key: {issue_key}, Summary: {summary}")
             last_comment = get_latest_comment(issue_key)
             row['last_comment'] = last_comment
             updated_rows.append(row)
 
-    with open(csv_file_name, 'w', newline='') as file:
+    with open(csv_file_name, 'w', newline='', encoding='utf-8') as file:
         csv_writer = csv.DictWriter(file, fieldnames=fieldnames)
         csv_writer.writeheader()
         csv_writer.writerows(updated_rows)

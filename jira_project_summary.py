@@ -71,22 +71,36 @@ def extract_field_values(fields, filter_name):
     """
     extracted_fields = {}
     for field, extraction_keys in field_dict_to_string.items():
-        if field in fields and fields[field] is not None and isinstance(fields[field], dict):
-            extracted_values = [str(fields[field].get(key, '')) for key in extraction_keys]
-            extracted_fields[field] = ' - '.join(extracted_values)
+        if field in fields and fields[field] is not None:
+            if isinstance(fields[field], dict):
+                # Value is a dictionary
+                extracted_values = [str(fields[field].get(key, "")) for key in extraction_keys]
+                extracted_fields[field] = " | ".join(extracted_values)
+            elif isinstance(fields[field], list):
+                # Value is a list of dictionaries
+                extracted_values = []
+                for item in fields[field]:
+                    if isinstance(item, dict):
+                        item_values = [str(item.get(key, "")) for key in extraction_keys]
+                        extracted_values.extend(item_values)
+                extracted_fields[field] = " | ".join(extracted_values)
+            else:
+                # Value is not a dictionary or a list, treat it as a single value
+                extracted_fields[field] = str(fields[field])
+
         else:
-            extracted_fields[field] = fields.get(field, '')
+            extracted_fields[field] = ""
 
     # Apply summary splitting logic for 'all_initiatives' filter
-    if filter_name == 'all_initiatives':
-        summary = fields.get('summary', '')
-        if ' - ' in summary:
-            project, initiative = summary.split(' - ', 1)
+    if filter_name == "all_initiatives":
+        summary = fields.get("summary", "")
+        if " - " in summary:
+            project, initiative = summary.split(" - ", 1)
         else:
-            project = 'Others'
-            initiative = ''
-        extracted_fields['Project'] = project
-        extracted_fields['Initiative'] = initiative
+            project = "Others"
+            initiative = ""
+        extracted_fields["Project"] = project
+        extracted_fields["Initiative"] = initiative
 
     return extracted_fields
 

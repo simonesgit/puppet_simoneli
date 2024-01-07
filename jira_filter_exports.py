@@ -1,6 +1,8 @@
 import requests
 import pandas as pd
 import json
+import subprocess
+
 
 # Define the Jira filter URL
 filter_url = "https://your-jira-instance/rest/api/2/search?jql=filter={}"
@@ -183,3 +185,4 @@ for filter_data in filters:
     else:
         print(f"Error retrieving Jira filter results for {filter_name}. Status code: {response.status_code}. Response content: {response.content}")
 
+subprocess.run(['python', 'jira_overview_initiatives-epics.py'])

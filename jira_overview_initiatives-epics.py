@@ -24,8 +24,8 @@ in_progress_completed_story_counts.columns = ['E_key', 'wipStories']
 overview_df = overview_df.merge(in_progress_completed_story_counts, how='left', on='E_key')
 
 # Step 6: Reorganize the column sequence
-column_sequence = ['I_key', 'I_assignee', 'I_summary', 'I_priority', 'I_status', 'I_labels',
-                   'E_key', 'E_assignee', 'E_summary', 'E_priority', 'E_status', 'E_labels', 'E_ParentLink',
+column_sequence = ['I_key', 'I_assignee', 'I_AdditionalAssignee', 'I_summary', 'I_priority', 'I_status', 'I_labels',
+                   'E_key', 'E_assignee', 'E_AdditionalAssignee', 'E_summary', 'E_priority', 'E_status', 'E_labels', 'E_ParentLink',
                    'E_ResolutionNote', 'E_created', 'E_EpicName', 'E_description', 'E_resolution', 'E_progress',
                    'E_TargetStart', 'E_TargetEnd', 'E_StartDate', 'E_EndDate',
                    'activeStories', 'wipStories']

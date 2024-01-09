@@ -46,6 +46,16 @@ for index, row in overview_df.iterrows():
         overview_df.at[index, 'I_TargetEnd'] = e_target_end
         warn_message += f"I_Key: {row['I_key']}, E_TargetEnd: {e_target_end}, "
         
+    i_due_date = row['I_DueDate']
+    if pd.notnull(i_due_date) and (pd.isnull(i_target_end) or i_due_date > i_target_end):
+        overview_df.at[index, 'I_TargetEnd'] = i_due_date
+        warn_message += f"I_Key: {row['I_key']}, I_DueDate: {i_due_date}, "
+    
+    e_due_date = row['E_DueDate']
+    if pd.notnull(e_due_date) and (pd.isnull(e_target_end) or e_due_date > e_target_end):
+        overview_df.at[index, 'E_TargetEnd'] = e_due_date
+        warn_message += f"I_Key: {row['I_key']}, E_DueDate: {e_due_date}, "
+        
 if warn_message != "Value updated: ":
     print(warn_message[:-2])  # Print warning message if any values were updated
 
@@ -53,9 +63,6 @@ if warn_message != "Value updated: ":
 df_gantt = pd.DataFrame(columns=['I_key', 'objective_key', 'objective', 'TargetStart', 'TargetEnd'])
 
 # Step 9: Add rows to the gantt dataframe
-df_gantt = df_gantt.append({'I_key': 'CONTROMPM-0000', 'objective_key': 'I_key', 'objective': 'Others',
-                            'TargetStart': '', 'TargetEnd': ''}, ignore_index=True)
-
 for index, row in overview_df.iterrows():
     df_gantt = df_gantt.append({'I_key': row['I_key'], 'objective_key': row['I_key'], 'objective': row['I_summary'],
                                 'TargetStart': row['I_TargetStart'], 'TargetEnd': row['I_TargetEnd']}, ignore_index=True)

@@ -19,12 +19,8 @@ initiatives_df['resource'] = ''
 epics_df['resource'] = ''
 stories_df['resource'] = ''
 
-# Convert assignee and AdditionalAssignee columns to string data type
-stories_df['S_assignee'] = stories_df['S_assignee'].astype(str)
-stories_df['S_AdditionalAssignee'] = stories_df['S_AdditionalAssignee'].astype(str)
-
 # Step 5: Assign resource value of stories
-stories_df['resource_list'] = stories_df.apply(lambda row: [row['S_assignee']] + row['S_AdditionalAssignee'].split(' | '), axis=1)
+stories_df['resource_list'] = stories_df.apply(lambda row: [row['S_assignee']] + str(row['S_AdditionalAssignee']).split(' | '), axis=1)
 stories_df['resource'] = stories_df['resource_list'].apply(lambda x: ', '.join(list(set(filter(None, map(str, x))))))  # Convert values to strings, remove duplicates, and generate resource string
 
 # Step 6: Assign resource value of epics
@@ -57,7 +53,7 @@ for row in initiatives_df.itertuples():
     initiative = [row.I_key, row.I_summary, row.I_TargetStart, row.I_TargetEnd, row.resource]
     gantt_df.loc[len(gantt_df)] = ['Initiative', *initiative]
 
-    initiative_epics = epics_df[epics_df['E_PartentLink'] == row.I_key]
+    initiative_epics = epics_df[epics_df['E_ParentLink'] == row.I_key]
     for epic_row in initiative_epics.itertuples():
         epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.resource]
         gantt_df.loc[len(gantt_df)] = ['Epic', *epic]

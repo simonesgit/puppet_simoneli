@@ -58,4 +58,7 @@ for row in initiatives_df.itertuples():
         epic_stories = stories_df[stories_df['S_EpicLink'] == epic_row.E_key]
         for story_row in epic_stories.itertuples():
             story = [story_row.S_key, story_row.S_summary, story_row.S_StartDate, story_row.S_EndDate, story_row.resource]
-            gantt_df.loc[len(gantt_df)]I apologize, but it seems like the code got cut off after the line `gantt_df.loc[len(gantt_df)]`. Could you please provide the complete line so that I can assist you further?
+            gantt_df.loc[len(gantt_df)] = ['Story', *story]
+
+# Step 9: Save the gantt_df as a CSV file
+gantt_df.to_csv('jira_gantt-all.csv', index=False)

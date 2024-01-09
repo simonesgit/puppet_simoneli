@@ -20,17 +20,16 @@ epics_df['resource'] = ''
 stories_df['resource'] = ''
 
 # Step 5: Assign resource value of stories
-stories_df['resource'] = stories_df.apply(lambda row: row['S_assignee'] if pd.isnull(row['S_AdditionalAssignee']) else row['S_assignee'] + ' | ' + row['S_AdditionalAssignee'], axis=1)
-stories_df['resource'] = stories_df['resource'].str.strip()  # Remove leading/trailing whitespaces
+stories_df['resource'] = stories_df.apply(lambda row: [row['S_assignee'], row['S_AdditionalAssignee']], axis=1)
+stories_df['resource'] = stories_df['resource'].apply(lambda x: ', '.join(list(set(filter(None, x)))))  # Remove duplicates and generate resource string
 
 # Step 6: Assign resource value of epics
 unique_epic_ids = epics_df['E_key'].unique()
 for epic_id in unique_epic_ids:
     epic_row = epics_df[epics_df['E_key'] == epic_id].iloc[0]
     epic_stories = stories_df[stories_df['S_EpicLink'] == epic_id]
-    epic_resource = str(epic_row['E_assignee']) if pd.isnull(epic_row['E_AdditionalAssignee']) else str(epic_row['E_assignee']) + ' | ' + str(epic_row['E_AdditionalAssignee'])
-    epic_resource += ' | ' + ' | '.join(epic_stories['resource'].unique())
-    epic_resource = ' '.join(epic_resource.split())  # Remove extra whitespaces
+    epic_resource = [epic_row['E_assignee'], epic_row['E_AdditionalAssignee']] + list(epic_stories['resource'])
+    epic_resource = ', '.join(list(set(filter(None, epic_resource))))  # Remove duplicates and generate resource string
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
 
 # Step 7: Assign resource value of initiatives
@@ -38,9 +37,8 @@ unique_initiative_ids = initiatives_df['I_key'].unique()
 for initiative_id in unique_initiative_ids:
     initiative_row = initiatives_df[initiatives_df['I_key'] == initiative_id].iloc[0]
     initiative_epics = epics_df[epics_df['E_PartentLink'] == initiative_id]
-    initiative_resource = str(initiative_row['I_assignee']) if pd.isnull(initiative_row['I_AdditionalAssignee']) else str(initiative_row['I_assignee']) + ' | ' + str(initiative_row['I_AdditionalAssignee'])
-    initiative_resource += ' | ' + ' | '.join(initiative_epics['resource'].unique())
-    initiative_resource = ' '.join(initiative_resource.split())  # Remove extra whitespaces
+    initiative_resource = [initiative_row['I_assignee'], initiative_row['I_AdditionalAssignee']] + list(initiative_epics['resource'])
+    initiative_resource = ', '.join(list(set(filter(None, initiative_resource))))  # Remove duplicates and generate resource string
     initiatives_df.loc[initiatives_df['I_key'] == initiative_id, 'resource'] = initiative_resource
 
 # Step 8: Create the gantt_df dataframe

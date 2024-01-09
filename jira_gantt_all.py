@@ -27,7 +27,7 @@ unique_epic_ids = epics_df['E_key'].unique()
 for epic_id in unique_epic_ids:
     epic_row = epics_df[epics_df['E_key'] == epic_id].iloc[0]
     epic_stories = stories_df[stories_df['S_EpicLink'] == epic_id]
-    epic_resource = epic_row['E_assignee'] if pd.isnull(epic_row['E_AdditionalAssignee']) else epic_row['E_assignee'] + ' | ' + epic_row['E_AdditionalAssignee']
+    epic_resource = str(epic_row['E_assignee']) if pd.isnull(epic_row['E_AdditionalAssignee']) else str(epic_row['E_assignee']) + ' | ' + str(epic_row['E_AdditionalAssignee'])
     epic_resource += ' | ' + ' | '.join(epic_stories['resource'].unique())
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
 
@@ -36,7 +36,7 @@ unique_initiative_ids = initiatives_df['I_key'].unique()
 for initiative_id in unique_initiative_ids:
     initiative_row = initiatives_df[initiatives_df['I_key'] == initiative_id].iloc[0]
     initiative_epics = epics_df[epics_df['E_PartentLink'] == initiative_id]
-    initiative_resource = initiative_row['I_assignee'] if pd.isnull(initiative_row['I_AdditionalAssignee']) else initiative_row['I_assignee'] + ' | ' + initiative_row['I_AdditionalAssignee']
+    initiative_resource = str(initiative_row['I_assignee']) if pd.isnull(initiative_row['I_AdditionalAssignee']) else str(initiative_row['I_assignee']) + ' | ' + str(initiative_row['I_AdditionalAssignee'])
     initiative_resource += ' | ' + ' | '.join(initiative_epics['resource'].unique())
     initiatives_df.loc[initiatives_df['I_key'] == initiative_id, 'resource'] = initiative_resource
 

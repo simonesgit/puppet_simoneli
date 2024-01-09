@@ -62,6 +62,6 @@ for row in initiatives_df.itertuples():
         for story_row in epic_stories.itertuples():
             story = [story_row.S_key, story_row.S_summary, story_row.S_StartDate, story_row.S_EndDate, story_row.resource]
             gantt_df.loc[len(gantt_df)] = ['Story', *story]
-
+gantt_df['resources'] = gantt_df['resources'].apply(lambda x: ', '.join(sorted(set(map(str.strip, x.split(','))))))
 # Step 9: Save the gantt_df as a CSV file
 gantt_df.to_csv('jira_gantt-all.csv', index=False)

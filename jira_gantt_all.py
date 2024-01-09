@@ -21,6 +21,7 @@ stories_df['resource'] = ''
 
 # Step 5: Assign resource value of stories
 stories_df['resource'] = stories_df.apply(lambda row: row['S_assignee'] if pd.isnull(row['S_AdditionalAssignee']) else row['S_assignee'] + ' | ' + row['S_AdditionalAssignee'], axis=1)
+stories_df['resource'] = stories_df['resource'].str.strip()  # Remove leading/trailing whitespaces
 
 # Step 6: Assign resource value of epics
 unique_epic_ids = epics_df['E_key'].unique()
@@ -29,6 +30,7 @@ for epic_id in unique_epic_ids:
     epic_stories = stories_df[stories_df['S_EpicLink'] == epic_id]
     epic_resource = str(epic_row['E_assignee']) if pd.isnull(epic_row['E_AdditionalAssignee']) else str(epic_row['E_assignee']) + ' | ' + str(epic_row['E_AdditionalAssignee'])
     epic_resource += ' | ' + ' | '.join(epic_stories['resource'].unique())
+    epic_resource = ' '.join(epic_resource.split())  # Remove extra whitespaces
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
 
 # Step 7: Assign resource value of initiatives
@@ -38,6 +40,7 @@ for initiative_id in unique_initiative_ids:
     initiative_epics = epics_df[epics_df['E_PartentLink'] == initiative_id]
     initiative_resource = str(initiative_row['I_assignee']) if pd.isnull(initiative_row['I_AdditionalAssignee']) else str(initiative_row['I_assignee']) + ' | ' + str(initiative_row['I_AdditionalAssignee'])
     initiative_resource += ' | ' + ' | '.join(initiative_epics['resource'].unique())
+    initiative_resource = ' '.join(initiative_resource.split())  # Remove extra whitespaces
     initiatives_df.loc[initiatives_df['I_key'] == initiative_id, 'resource'] = initiative_resource
 
 # Step 8: Create the gantt_df dataframe
@@ -55,7 +58,4 @@ for row in initiatives_df.itertuples():
         epic_stories = stories_df[stories_df['S_EpicLink'] == epic_row.E_key]
         for story_row in epic_stories.itertuples():
             story = [story_row.S_key, story_row.S_summary, story_row.S_StartDate, story_row.S_EndDate, story_row.resource]
-            gantt_df.loc[len(gantt_df)] = ['Story', *story]
-
-# Step 9: Save the gantt_df as a CSV file
-gantt_df.to_csv('jira_gantt-all.csv', index=False)
+            gantt_df.loc[len(gantt_df)]I apologize, but it seems like the code got cut off after the line `gantt_df.loc[len(gantt_df)]`. Could you please provide the complete line so that I can assist you further?

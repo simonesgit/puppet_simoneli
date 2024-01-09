@@ -21,7 +21,7 @@ stories_df['resource'] = ''
 
 # Step 5: Assign resource value of stories
 stories_df['resource'] = stories_df.apply(lambda row: [row['S_assignee'], row['S_AdditionalAssignee']], axis=1)
-stories_df['resource'] = stories_df['resource'].apply(lambda x: ', '.join(list(set(filter(None, x)))))  # Remove duplicates and generate resource string
+stories_df['resource'] = stories_df['resource'].apply(lambda x: ', '.join(list(set(filter(None, map(str, x))))))  # Convert values to strings, remove duplicates, and generate resource string
 
 # Step 6: Assign resource value of epics
 unique_epic_ids = epics_df['E_key'].unique()
@@ -29,7 +29,7 @@ for epic_id in unique_epic_ids:
     epic_row = epics_df[epics_df['E_key'] == epic_id].iloc[0]
     epic_stories = stories_df[stories_df['S_EpicLink'] == epic_id]
     epic_resource = [epic_row['E_assignee'], epic_row['E_AdditionalAssignee']] + list(epic_stories['resource'])
-    epic_resource = ', '.join(list(set(filter(None, epic_resource))))  # Remove duplicates and generate resource string
+    epic_resource = ', '.join(list(set(filter(None, map(str, epic_resource))))  # Convert values to strings, remove duplicates, and generate resource string
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
 
 # Step 7: Assign resource value of initiatives
@@ -38,25 +38,5 @@ for initiative_id in unique_initiative_ids:
     initiative_row = initiatives_df[initiatives_df['I_key'] == initiative_id].iloc[0]
     initiative_epics = epics_df[epics_df['E_PartentLink'] == initiative_id]
     initiative_resource = [initiative_row['I_assignee'], initiative_row['I_AdditionalAssignee']] + list(initiative_epics['resource'])
-    initiative_resource = ', '.join(list(set(filter(None, initiative_resource))))  # Remove duplicates and generate resource string
+    initiative_resource = ', '.join(list(set(filter(None, map(str, initiative_resource))))  # Convert values to strings, remove duplicates, and generate resource string
     initiatives_df.loc[initiatives_df['I_key'] == initiative_id, 'resource'] = initiative_resource
-
-# Step 8: Create the gantt_df dataframe
-gantt_df = pd.DataFrame(columns=['issueType', 'issueKey', 'summary', 'TargetStart', 'TargetEnd', 'resources'])
-
-for row in initiatives_df.itertuples():
-    initiative = [row.I_key, row.I_summary, row.I_TargetStart, row.I_TargetEnd, row.resource]
-    gantt_df.loc[len(gantt_df)] = ['Initiative', *initiative]
-
-    initiative_epics = epics_df[epics_df['E_PartentLink'] == row.I_key]
-    for epic_row in initiative_epics.itertuples():
-        epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.resource]
-        gantt_df.loc[len(gantt_df)] = ['Epic', *epic]
-
-        epic_stories = stories_df[stories_df['S_EpicLink'] == epic_row.E_key]
-        for story_row in epic_stories.itertuples():
-            story = [story_row.S_key, story_row.S_summary, story_row.S_StartDate, story_row.S_EndDate, story_row.resource]
-            gantt_df.loc[len(gantt_df)] = ['Story', *story]
-
-# Step 9: Save the gantt_df as a CSV file
-gantt_df.to_csv('jira_gantt-all.csv', index=False)

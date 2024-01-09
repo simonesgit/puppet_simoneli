@@ -32,7 +32,7 @@ unique_epic_ids = epics_df['E_key'].unique()
 for epic_id in unique_epic_ids:
     epic_row = epics_df[epics_df['E_key'] == epic_id].iloc[0]
     epic_stories = stories_df[stories_df['S_EpicLink'] == epic_id]
-    epic_resource_list = [epic_row['E_assignee']] + epic_row['E_AdditionalAssignee'].split(' | ') + list(epic_stories['resource_list'])
+    epic_resource_list = [epic_row['E_assignee']] + epic_row['E_AdditionalAssignee'].split(' | ') + list(epic_stories['S_assignee']) + list(epic_stories['S_AdditionalAssignee'])
     epic_resource = ', '.join(list(set(filter(None, map(str, epic_resource_list)))))  # Convert values to strings, remove duplicates, and generate resource string
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
 
@@ -40,8 +40,8 @@ for epic_id in unique_epic_ids:
 unique_initiative_ids = initiatives_df['I_key'].unique()
 for initiative_id in unique_initiative_ids:
     initiative_row = initiatives_df[initiatives_df['I_key'] == initiative_id].iloc[0]
-    initiative_epics = epics_df[epics_df['E_PartentLink'] == initiative_id]
-    initiative_resource_list = [initiative_row['I_assignee']] + initiative_row['I_AdditionalAssignee'].split(' | ') + list(initiative_epics['resource_list'])
+    initiative_epics = epics_df[epics_df['E_ParentLink'] == initiative_id]
+    initiative_resource_list = [initiative_row['I_assignee']] + initiative_row['I_AdditionalAssignee'].split(' | ') + list(initiative_epics['resource'])
     initiative_resource = ', '.join(list(set(filter(None, map(str, initiative_resource_list)))))  # Convert values to strings, remove duplicates, and generate resource string
     initiatives_df.loc[initiatives_df['I_key'] == initiative_id, 'resource'] = initiative_resource
 

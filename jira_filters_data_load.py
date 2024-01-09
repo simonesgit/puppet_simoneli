@@ -27,12 +27,12 @@ filters = [
     {
         'filter_name': 'all_epics',
         'filter_id': '342493',
-        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'ParentLink', 'ResolutionNote', 'created', 'EpicName', 'description', 'resolution', 'progress', 'TargetStart', 'TargetEnd', 'StartDate', 'EndDate', 'AdditionalAssignee']
+        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'ParentLink', 'ResolutionNote', 'created', 'EpicName', 'description', 'resolution', 'progress', 'TargetStart', 'TargetEnd', 'duedate', 'StartDate', 'EndDate', 'AdditionalAssignee']
     },
     {
         'filter_name': 'all_stories',
         'filter_id': '342671',
-        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'EpicLink', 'StoryPoints', 'StartDate', 'EndDate', 'assignee', 'AdditionalAssignee']
+        'filter_fields': ['key', 'assignee', 'summary', 'priority', 'status', 'labels', 'EpicLink', 'StoryPoints', 'StartDate', 'EndDate', 'duedate', 'assignee', 'AdditionalAssignee']
     }
     # Add more filters as needed
 ]

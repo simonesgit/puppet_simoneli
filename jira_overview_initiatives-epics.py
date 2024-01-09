@@ -24,9 +24,9 @@ in_progress_completed_story_counts.columns = ['E_key', 'wipStories']
 overview_df = overview_df.merge(in_progress_completed_story_counts, how='left', on='E_key')
 
 # Step 6: Reorganize the column sequence
-column_sequence = ['I_key', 'I_assignee', 'I_AdditionalAssignee', 'I_summary', 'I_priority', 'I_status', 'I_labels', 'I_duedate',
+column_sequence = ['I_key', 'I_assignee', 'I_AdditionalAssignee', 'I_summary', 'I_priority', 'I_status', 'I_labels', 'I_duedate','I_TargetStart', 'I_TargetEnd',
                    'E_key', 'E_assignee', 'E_AdditionalAssignee', 'E_summary', 'E_priority', 'E_status', 'E_labels', 'E_ParentLink',
-                   'E_ResolutionNote', 'E_created', 'E_EpicName', 'E_description', 'E_resolution', 'E_progress',
+                   'E_ResolutionNote', 'E_created', 'E_EpicName', 'E_description', 'E_resolution', 'E_progress', 'E_duedate',
                    'E_TargetStart', 'E_TargetEnd', 'E_StartDate', 'E_EndDate', 'E_duedate',
                    'activeStories', 'wipStories']
 overview_df = overview_df[column_sequence]
@@ -46,15 +46,15 @@ for index, row in overview_df.iterrows():
         overview_df.at[index, 'I_TargetEnd'] = e_target_end
         warn_message += f"I_Key: {row['I_key']}, E_TargetEnd: {e_target_end}, "
         
-    i_due_date = row['I_DueDate']
+    i_due_date = row['I_duedate']
     if pd.notnull(i_due_date) and (pd.isnull(i_target_end) or i_due_date > i_target_end):
         overview_df.at[index, 'I_TargetEnd'] = i_due_date
-        warn_message += f"I_Key: {row['I_key']}, I_DueDate: {i_due_date}, "
+        warn_message += f"I_Key: {row['I_key']}, I_duedate: {i_due_date}, "
     
-    e_due_date = row['E_DueDate']
+    e_due_date = row['E_duedate']
     if pd.notnull(e_due_date) and (pd.isnull(e_target_end) or e_due_date > e_target_end):
         overview_df.at[index, 'E_TargetEnd'] = e_due_date
-        warn_message += f"I_Key: {row['I_key']}, E_DueDate: {e_due_date}, "
+        warn_message += f"I_Key: {row['I_key']}, E_duedate: {e_due_date}, "
         
 if warn_message != "Value updated: ":
     print(warn_message[:-2])  # Print warning message if any values were updated

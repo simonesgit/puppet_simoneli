@@ -32,7 +32,13 @@ for epic_id in unique_epic_ids:
     epic_resource_list = [name for name in epic_resource_list if str(name) != 'nan']  # Remove 'nan' values
     epic_resource = ', '.join(list(set(filter(None, map(str, epic_resource_list)))))
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
-
+    
+# Step 6.1: Include epics without stories
+epics_without_stories = epics_df[~epics_df['E_key'].isin(stories_df['S_EpicLink'])]
+for epic_row in epics_without_stories.itertuples():
+    epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.resource]
+    gantt_df.loc[len(gantt_df)] = ['Epic', *epic]
+    
 # Step 7: Assign resource value of initiatives
 unique_initiative_ids = initiatives_df['I_key'].unique()
 for initiative_id in unique_initiative_ids:

@@ -42,17 +42,17 @@ for index, row in overview_df.iterrows():
     
     i_target_end = row['I_TargetEnd']
     e_target_end = row['E_TargetEnd']
-    if pd.notnull(e_target_end) and (pd.isnull(i_target_end) or (e_target_end > i_target_end).any()):
+    if pd.notnull(e_target_end) and (pd.isnull(i_target_end) or e_target_end > i_target_end):
         overview_df.at[index, 'I_TargetEnd'] = e_target_end
         warn_message += f"I_Key: {row['I_key']}, E_TargetEnd: {e_target_end}, "
         
     i_due_date = row['I_duedate']
-    if pd.notnull(i_due_date) and (pd.isnull(i_target_end) or (i_due_date > i_target_end).any()):
+    if pd.notnull(i_due_date) and (pd.isnull(i_target_end) or i_due_date > i_target_end):
         overview_df.at[index, 'I_TargetEnd'] = i_due_date
         warn_message += f"I_Key: {row['I_key']}, I_duedate: {i_due_date}, "
     
     e_due_date = row['E_duedate']
-    if pd.notnull(e_due_date) and (pd.isnull(e_target_end) or (e_due_date > e_target_end).any()):
+    if pd.notnull(e_due_date) and (pd.isnull(e_target_end) or e_due_date > e_target_end):
         overview_df.at[index, 'E_TargetEnd'] = e_due_date
         warn_message += f"I_Key: {row['I_key']}, E_duedate: {e_due_date}, "
         

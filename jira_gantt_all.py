@@ -32,13 +32,7 @@ for epic_id in unique_epic_ids:
     epic_resource_list = [name for name in epic_resource_list if str(name) != 'nan']  # Remove 'nan' values
     epic_resource = ', '.join(list(set(filter(None, map(str, epic_resource_list)))))
     epics_df.loc[epics_df['E_key'] == epic_id, 'resource'] = epic_resource
-    
-# Step 6.1: Include epics without stories
-epics_without_stories = epics_df[~epics_df['E_key'].isin(stories_df['S_EpicLink'])]
-for epic_row in epics_without_stories.itertuples():
-    epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.resource]
-    gantt_df.loc[len(gantt_df)] = ['Epic', *epic]
-    
+
 # Step 7: Assign resource value of initiatives
 unique_initiative_ids = initiatives_df['I_key'].unique()
 for initiative_id in unique_initiative_ids:
@@ -60,14 +54,22 @@ for row in initiatives_df.itertuples():
     gantt_df.loc[len(gantt_df)] = ['Initiative', *initiative]
 
     initiative_epics = epics_df[epics_df['E_ParentLink'] == row.I_key]
+    if len(initiative_epics) == 0:
+        # If there are no epics, add a row with empty values
+        gantt_df.loc[len(gantt_df)] = ['Epic', '', '', '', '', '']
+
     for epic_row in initiative_epics.itertuples():
         epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.resource]
         gantt_df.loc[len(gantt_df)] = ['Epic', *epic]
 
         epic_stories = stories_df[stories_df['S_EpicLink'] == epic_row.E_key]
+        if len(epic_stories) == 0:
+            # If there are no stories, add a row with empty values
+            gantt_df.loc[len(gantt_df)] = ['Story', '', '', '', '', '']
+
         for story_row in epic_stories.itertuples():
-            story = [story_row.S_key, story_row.S_summary, story_row.S_StartDate, story_row.S_EndDate, story_row.resource]
+            story = [story_row.S_key, story_row.S_summary, story_row.S_TargetStart, story_row.S_TargetEnd, story_row.resource]
             gantt_df.loc[len(gantt_df)] = ['Story', *story]
-gantt_df['resources'] = gantt_df['resources'].apply(lambda x: ', '.join(sorted(set(map(str.strip, x.split(','))))))
+
 # Step 9: Save the gantt_df as a CSV file
-gantt_df.to_csv('jira_gantt-all.csv', index=False)
+gantt_df.to_csv('jira_gantt_all.csv', index=False)

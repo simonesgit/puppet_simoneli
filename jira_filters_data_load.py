@@ -122,7 +122,8 @@ for filter_data in filters:
     filter_fields = filter_data['filter_fields']
 
     # Send an HTTP GET request to retrieve the Jira filter results
-    response = requests.get(filter_url.format(filter_id), auth=(username, password), verify=ca_file_path)
+    url = filter_url.format(filter_id) + "&maxResults=" + str(max_results_per_page)
+    response = requests.get(url, auth=(username, password), verify=ca_file_path)
 
     # Check if the response is successful
     if response.status_code == 200:

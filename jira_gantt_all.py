@@ -10,6 +10,11 @@ initiatives_df = initiatives_df.add_prefix('I_')
 epics_df = epics_df.add_prefix('E_')
 stories_df = stories_df.add_prefix('S_')
 
+# Add the 'assignee' column information in each dataframe
+initiatives_df.rename(columns={'I_assignee': 'assignee'}, inplace=True)
+epics_df.rename(columns={'E_assignee': 'assignee'}, inplace=True)
+stories_df.rename(columns={'S_assignee': 'assignee'}, inplace=True)
+
 # Step 3: Update target end if due date is later or there's no target date
 initiatives_df['I_TargetEnd'] = initiatives_df.apply(lambda row: row['I_EndDate'] if pd.notnull(row['I_EndDate']) else row['I_TargetEnd'], axis=1)
 epics_df['E_TargetEnd'] = epics_df.apply(lambda row: row['E_duedate'] if pd.notnull(row['E_duedate']) else row['E_TargetEnd'], axis=1)
@@ -47,29 +52,30 @@ for initiative_id in unique_initiative_ids:
 stories_df.drop('resource_list', axis=1, inplace=True)
 
 # Step 8: Create the gantt_df dataframe
-gantt_df = pd.DataFrame(columns=['issueType', 'issueKey', 'summary', 'TargetStart', 'TargetEnd', 'resources'])
+gantt_df = pd.DataFrame(columns=['issueType', 'issueKey', 'summary', 'TargetStart', 'TargetEnd', 'assignee', 'resources'])
 
 for row in initiatives_df.itertuples():
-    initiative = [row.I_key, row.I_summary, row.I_TargetStart, row.I_TargetEnd, row.resource]
+    initiative = [row.I_key, row.I_summary, row.I_TargetStart, row.I_TargetEnd, row.I_assignee, row.resource]
     gantt_df.loc[len(gantt_df)] = ['Initiative', *initiative]
 
     initiative_epics = epics_df[epics_df['E_ParentLink'] == row.I_key]
     if len(initiative_epics) == 0:
-        # If there are no epics, add a row with empty values
-        gantt_df.loc[len(gantt_df)] = ['Epic', '', '', '', '', '']
+        # If there are noepics associated with the initiative, add an empty row for the Epic section in the gantt_df.
+```python
+        gantt_df.loc[len(gantt_df)] = ['Epic', '', '', '', '', '', '']
+    else:
+        for epic_row in initiative_epics.itertuples():
+            epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.E_assignee, epic_row.resource]
+            gantt_df.loc[len(gantt_df)] = ['Epic', *epic]
 
-    for epic_row in initiative_epics.itertuples():
-        epic = [epic_row.E_key, epic_row.E_summary, epic_row.E_TargetStart, epic_row.E_TargetEnd, epic_row.resource]
-        gantt_df.loc[len(gantt_df)] = ['Epic', *epic]
+            epic_stories = stories_df[stories_df['S_EpicLink'] == epic_row.E_key]
+            if len(epic_stories) == 0:
+                # If there are no stories associated with the epic, add an empty row for the Story section in the gantt_df.
+                gantt_df.loc[len(gantt_df)] = ['Story', '', '', '', '', '', '']
+            else:
+                for story_row in epic_stories.itertuples():
+                    story = [story_row.S_key, story_row.S_summary, story_row.S_TargetStart, story_row.S_TargetEnd, story_row.S_assignee, story_row.resource]
+                    gantt_df.loc[len(gantt_df)] = ['Story', *story]
 
-        epic_stories = stories_df[stories_df['S_EpicLink'] == epic_row.E_key]
-        if len(epic_stories) == 0:
-            # If there are no stories, add a row with empty values
-            gantt_df.loc[len(gantt_df)] = ['Story', '', '', '', '', '']
-
-        for story_row in epic_stories.itertuples():
-            story = [story_row.S_key, story_row.S_summary, story_row.S_TargetStart, story_row.S_TargetEnd, story_row.resource]
-            gantt_df.loc[len(gantt_df)] = ['Story', *story]
-
-# Step 9: Save the gantt_df as a CSV file
+# Step 9: Save the gantt_df dataframe as a CSV file
 gantt_df.to_csv('jira_gantt_all.csv', index=False)

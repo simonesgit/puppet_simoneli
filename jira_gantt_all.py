@@ -79,3 +79,40 @@ for row in initiatives_df.itertuples():
 
 # Step 9: Save the gantt_df dataframe as a CSV file
 gantt_df.to_csv('jira_gantt_all.csv', index=False)
+
+
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Hyperlink
+
+# Continue from the previous script
+# ...
+
+# Output the Gantt chart data as an Excel file
+gantt_filename = 'gantt_chart.xlsx'
+gantt_df.to_excel(gantt_filename, index=False)
+
+# Modify the Gantt chart Excel file to create clickable entries
+gantt_wb = pd.load_workbook(gantt_filename)
+gantt_ws = gantt_wb.active
+
+# Add hyperlink to each cell in the "issueKey" column
+issueKey_col = gantt_df.columns.get_loc('issueKey') + 1
+issueKey_col_letter = get_column_letter(issueKey_col)
+
+for row_num, issueKey in enumerate(gantt_df['issueKey'], start=2):
+    cell = gantt_ws[f'{issueKey_col_letter}{row_num}']
+    cell.value = issueKey
+
+    link = f'https://confluence.com/issue/{issueKey}'
+    cell.hyperlink = Hyperlink(ref=f'{issueKey_col_letter}{row_num}', target=link)
+    cell.font = Font(underline='single', color='0563C1')
+
+# Save the modified Gantt chart Excel file
+gantt_wb.save(gantt_filename)
+
+# Additional steps with the modified Gantt chart Excel file
+# ...

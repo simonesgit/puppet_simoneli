@@ -11,9 +11,9 @@ epics_df = epics_df.add_prefix('E_')
 stories_df = stories_df.add_prefix('S_')
 
 # Add the 'assignee' column information in each dataframe
-initiatives_df.rename(columns={'I_assignee': 'assignee'}, inplace=True)
-epics_df.rename(columns={'E_assignee': 'assignee'}, inplace=True)
-stories_df.rename(columns={'S_assignee': 'assignee'}, inplace=True)
+# initiatives_df.rename(columns={'I_assignee': 'assignee'}, inplace=True)
+# epics_df.rename(columns={'E_assignee': 'assignee'}, inplace=True)
+# stories_df.rename(columns={'S_assignee': 'assignee'}, inplace=True)
 
 # Step 3: Update target end if due date is later or there's no target date
 initiatives_df['I_TargetEnd'] = initiatives_df.apply(lambda row: row['I_EndDate'] if pd.notnull(row['I_EndDate']) else row['I_TargetEnd'], axis=1)

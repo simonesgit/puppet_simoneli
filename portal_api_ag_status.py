@@ -81,6 +81,7 @@ def main():
                     'api_msg': api_msg,
                     'diag_comm': diag_comm
                 })
+                print("Server: {}, Agent: {} - Completed - API Response: {}, Message: {}".format(server['server'], server['agent'], 'Success', api_msg))
             except Exception as e:
                 writer.writerow({
                     'server': server['server'],
@@ -89,20 +90,7 @@ def main():
                     'api_msg': str(e),
                     'diag_comm': ''
                 })
-    
-    # Print completed and WIP servers and agents
-    completed_servers = [server['server'] for server in servers if server['api_rc'] == 'Success']
-    completed_agents = [server['agent'] for server in servers if server['api_rc'] == 'Success']
-    wip_servers = [server['server'] for server in servers if server['api_rc'] == 'Failed']
-    wip_agents = [server['agent'] for server in servers if server['api_rc'] == 'Failed']
-    
-    print("Completed:")
-    for server, agent in zip(completed_servers, completed_agents):
-        print("Server: {}, Agent: {}".format(server, agent))
-    
-    print("Work-in-progress:")
-    for server, agent in zip(wip_servers, wip_agents):
-        print("Server: {}, Agent: {}".format(server, agent))
+                print("Server: {}, Agent: {} - Work in Progress - Error: {}".format(server['server'], server['agent'], str(e)))
 
 if __name__ == "__main__":
     main()

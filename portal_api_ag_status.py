@@ -4,10 +4,12 @@ import requests
 from tqdm import tqdm
 
 class AppStatusAPI:
-    def __init__(self, base_url, ca_cert_file):
+    def __init__(self, base_url, ca_cert_file, max_token_renewal_attempts=3):
         self.base_url = base_url
         self.ca_cert_file = ca_cert_file
         self.token = None
+        self.max_token_renewal_attempts = max_token_renewal_attempts
+        self.token_renewal_attempts = 0
 
     def login(self, username, password):
         data = {
@@ -18,15 +20,24 @@ class AppStatusAPI:
         response_data = response.json()
         if response_data["code"] == 0:
             self.token = response_data["data"]
+        elif response_data["code"] == 50014:
+            self.renew_token()
+            self.login(username, password)
         else:
             raise Exception("Login failed: {}".format(response_data["msg"]))
 
     def renew_token(self):
+        if self.token_renewal_attempts >= self.max_token_renewal_attempts:
+            raise Exception("Maximum token renewal attempts reached")
+        
         if self.token is None:
             raise Exception("Token is not set")
         
         # Implement token renewal logic here
         
+        print("Token renewed")
+        self.token_renewal_attempts += 1
+
     def get_agent_status(self, server, agent):
         if self.token is None:
             raise Exception("Token is not set")
@@ -39,6 +50,9 @@ class AppStatusAPI:
         response_data = response.json()
         if response_data["code"] == 0:
             return response_data["data"]["diagnosis"], response_data["msg"]
+        elif response_data["code"] == 50014:
+            self.renew_token()
+            return self.get_agent_status(server, agent)
         else:
             raise Exception("API call failed: {}".format(response_data["msg"]))
 
@@ -76,7 +90,8 @@ def main(is_production=False):
             # Iterate over servers and agents
             for server in servers:
                 try:
-                    api.login(credentials["username"], credentials["password"])
+                    if api.token is None:
+                        api.login(credentials["username"], credentials["password"])
                     diag_comm, api_msg = api.get_agent_status(server['server'], server['agent'])
                     writer.writerow({
                         'server': server['server'],

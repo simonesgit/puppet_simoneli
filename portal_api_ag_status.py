@@ -3,8 +3,8 @@ import json
 import requests
 
 class AppStatusAPI:
-    def __init__(self):
-        self.base_url = "https://aaa.bb.com/v1/user/login"
+    def __init__(self, base_url):
+        self.base_url = base_url
         self.token = None
 
     def login(self, username, password):
@@ -12,7 +12,7 @@ class AppStatusAPI:
             "username": username,
             "password": password
         }
-        response = requests.post(self.base_url, json=data)
+        response = requests.post(self.base_url + "/v1/user/login", json=data)
         response_data = response.json()
         if response_data["code"] == 0:
             self.token = response_data["data"]
@@ -32,7 +32,7 @@ class AppStatusAPI:
         headers = {
             "x-hhhh-e2e-trust-token": self.token
         }
-        url = "https://aa.bb.com/v1/ctm/hostnames/{}/agents/{}:?retry=N".format(server, agent)
+        url = self.base_url + "/v1/ctm/hostnames/{}/agents/{}:?retry=N".format(server, agent)
         response = requests.get(url, headers=headers)
         response_data = response.json()
         if response_data["code"] == 0:
@@ -41,7 +41,15 @@ class AppStatusAPI:
             raise Exception("API call failed: {}".format(response_data["msg"]))
 
 def main():
-    api = AppStatusAPI()
+    # Choose the appropriate base URL
+    # Set the 'is_production' variable to True for production or False for UAT
+    is_production = False
+    if is_production:
+        base_url = "https://aaa.bb.com"
+    else:
+        base_url = "https://uat.aa.bb.com"
+    
+    api = AppStatusAPI(base_url)
     
     # Read Jira credentials from JSON file
     with open('api_credentials.json', 'r') as file:

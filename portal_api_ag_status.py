@@ -1,6 +1,7 @@
 import csv
 import json
 import requests
+from tqdm import tqdm
 
 class AppStatusAPI:
     def __init__(self, base_url, ca_cert_file):
@@ -41,10 +42,8 @@ class AppStatusAPI:
         else:
             raise Exception("API call failed: {}".format(response_data["msg"]))
 
-def main():
+def main(is_production=False):
     # Choose the appropriate base URL
-    # Set the 'is_production' variable to True for production or False for UAT
-    is_production = False
     if is_production:
         base_url = "https://aaa.bb.com"
     else:
@@ -69,28 +68,40 @@ def main():
             reader = csv.DictReader(server_file)
             servers = list(reader)
         
-        # Iterate over servers and agents
-        for server in servers:
-            try:
-                api.login(credentials["username"], credentials["password"])
-                diag_comm, api_msg = api.get_agent_status(server['server'], server['agent'])
-                writer.writerow({
-                    'server': server['server'],
-                    'agent': server['agent'],
-                    'api_rc': 'Success',
-                    'api_msg': api_msg,
-                    'diag_comm': diag_comm
-                })
-                print("Server: {}, Agent: {} - Completed - API Response: {}, Message: {}".format(server['server'], server['agent'], 'Success', api_msg))
-            except Exception as e:
-                writer.writerow({
-                    'server': server['server'],
-                    'agent': server['agent'],
-                    'api_rc': 'Failed',
-                    'api_msg': str(e),
-                    'diag_comm': ''
-                })
-                print("Server: {}, Agent: {} - Work in Progress - Error: {}".format(server['server'], server['agent'], str(e)))
+        total_servers = len(servers)
+        completed_servers = 0
+        
+        # Use tqdm to display progress and estimate time to end
+        with tqdm(total=total_servers, desc='Progress') as pbar:
+            # Iterate over servers and agents
+            for server in servers:
+                try:
+                    api.login(credentials["username"], credentials["password"])
+                    diag_comm, api_msg = api.get_agent_status(server['server'], server['agent'])
+                    writer.writerow({
+                        'server': server['server'],
+                        'agent': server['agent'],
+                        'api_rc': 'Success',
+                        'api_msg': api_msg,
+                        'diag_comm': diag_comm
+                    })
+                    completed_servers += 1
+                    pbar.update(1)
+                    pbar.set_postfix({'API Response': 'Success', 'Message': api_msg})
+                except Exception as e:
+                    writer.writerow({
+                        'server': server['server'],
+                        'agent': server['agent'],
+                        'api_rc': 'Failed',
+                        'api_msg': str(e),
+                        'diag_comm': ''
+                    })
+                    pbar.set_postfix({'API Response': 'Failed', 'Error': str(e)})
+    
+    # Calculate estimated time to end
+    estimated_time = (total_servers - completed_servers) * 5  # Assuming 5 seconds per server
+    print("Estimated time to end: {} seconds".format(estimated_time))
 
 if __name__ == "__main__":
-    main()
+    is_production = False  # Set to True for production or False for UAT
+    main(is_production)

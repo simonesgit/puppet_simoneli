@@ -42,22 +42,22 @@ class AppStatusAPI:
     def get_agent_status(self, server, agent):
         if self.token is None:
             raise Exception("Token is not set")
-
+    
         headers = {
             "x-hhhh-e2e-trust-token": self.token
         }
         url = self.base_url + "/v1/ctm/hostnames/{}/agents/{}?retry=N".format(server, agent)
-        start_time = time.time()
-        response = requests.get(url, headers=headers, verify=self.ca_cert_file)
-        end_time = time.time()
-        response_data = response.json()
-        if response_data["code"] == 0:
-            return response_data["data"]["diagnosis"], response_data["msg"], end_time - start_time
-        elif response_data["code"] == 50014:
-            self.renew_token()
-            return self.get_agent_status(server, agent)
-        else:
-            raise Exception("API call failed: {}".format(response_data["msg"]))
+        try:
+            start_time = time.time()
+            response = requests.get(url, headers=headers, verify=self.ca_cert_file, timeout=60)
+            end_time = time.time()
+            response_data = response.json()
+            if response_data["code"] == 0:
+                return response_data["data"]["diagnosis"], response_data["msg"], end_time - start_time
+            else:
+                raise Exception("API call failed: {}".format(response_data["msg"]))
+        except requests.Timeout:
+            return 1, 'Timeout when making the GET request for Agent Status.', 60
 
 def main(is_production=False):
     # Choose the appropriate base URL

@@ -3,7 +3,6 @@ import os
 from stat import S_ISDIR
 from concurrent.futures import ThreadPoolExecutor
 
-
 def scp_upload(host, username, password, local_folder):
     try:
         client = paramiko.SSHClient()
@@ -12,27 +11,11 @@ def scp_upload(host, username, password, local_folder):
 
         sftp = client.open_sftp()
 
-        # Create the remote directory if it does not exist
-        remote_folder = '/tmp/' + os.path.basename(local_folder.rstrip('/'))
-        if not remote_folder_exists(sftp, remote_folder):
-            sftp.mkdir(remote_folder)
-
-        # Upload files recursively
-        for root, dirs, files in os.walk(local_folder):
-            for d in dirs:
-                local_path = os.path.join(root, d)
-                relative_path = os.path.relpath(local_path, local_folder)
-                remote_path = os.path.join(remote_folder, relative_path)
-                if not remote_folder_exists(sftp, remote_path):
-                    sftp.mkdir(remote_path)
-            for f in files:
-                local_path = os.path.join(root, f)
-                relative_path = os.path.relpath(local_path, local_folder)
-                remote_path = os.path.join(remote_folder, relative_path)
-                sftp.put(local_path, remote_path)
+        # Upload the entire folder recursively
+        sftp.put(local_folder, '/tmp', recursive=True)
 
         # Set global readable permissions on the remote folder and its sub-elements
-        set_global_readable(sftp, remote_folder)
+        set_global_readable(sftp, '/tmp/' + os.path.basename(local_folder.rstrip('/')))
 
         sftp.close()
         client.close()

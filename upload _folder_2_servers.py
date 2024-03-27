@@ -19,14 +19,16 @@ def scp_upload(host, username, password, local_folder):
 
         # Upload files recursively
         for root, dirs, files in os.walk(local_folder):
-            remote_dir = remote_folder + root[len(local_folder):]
             for d in dirs:
-                remote_path = os.path.join(remote_dir, d)
+                local_path = os.path.join(root, d)
+                relative_path = os.path.relpath(local_path, local_folder)
+                remote_path = os.path.join(remote_folder, relative_path)
                 if not remote_folder_exists(sftp, remote_path):
                     sftp.mkdir(remote_path)
             for f in files:
                 local_path = os.path.join(root, f)
-                remote_path = os.path.join(remote_dir, f)
+                relative_path = os.path.relpath(local_path, local_folder)
+                remote_path = os.path.join(remote_folder, relative_path)
                 sftp.put(local_path, remote_path)
 
         # Set global readable permissions on the remote folder and its sub-elements

@@ -1,5 +1,6 @@
 import paramiko
 import os
+import tarfile
 from stat import S_ISDIR
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,11 +12,20 @@ def scp_upload(host, username, password, local_folder):
 
         sftp = client.open_sftp()
 
-        # Upload the entire folder recursively
-        sftp.put(local_folder, '/tmp', recursive=True)
+        # Create a temporary tar archive of the local folder
+        tar_filename = 'archive.tar.gz'
+        tar_path = os.path.join('/tmp', tar_filename)
+        create_tar_archive(local_folder, tar_path)
+
+        # Upload the tar archive to the remote server
+        remote_folder = '/tmp'
+        sftp.put(tar_path, os.path.join(remote_folder, tar_filename))
+
+        # Extract the tar archive on the remote server
+        extract_tar_archive(sftp, os.path.join(remote_folder, tar_filename), remote_folder)
 
         # Set global readable permissions on the remote folder and its sub-elements
-        set_global_readable(sftp, '/tmp/' + os.path.basename(local_folder.rstrip('/')))
+        set_global_readable(sftp, os.path.join(remote_folder, os.path.basename(local_folder.rstrip('/'))))
 
         sftp.close()
         client.close()
@@ -30,6 +40,16 @@ def scp_upload(host, username, password, local_folder):
 
     except Exception as e:
         return f'Error occurred while connecting to {host}: {str(e)}'
+
+
+def create_tar_archive(local_folder, tar_path):
+    with tarfile.open(tar_path, 'w:gz') as tar:
+        tar.add(local_folder, arcname=os.path.basename(local_folder))
+
+
+def extract_tar_archive(sftp, tar_path, remote_folder):
+    with tarfile.open(tar_path, 'r:gz') as tar:
+        tar.extractall(remote_folder)
 
 
 def remote_folder_exists(sftp, remote_folder):

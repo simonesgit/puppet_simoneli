@@ -1,74 +1,60 @@
 import paramiko
 import os
 import tarfile
-from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
-def scp_upload(host, username, password, local_folder):
+def scp_upload(hosts, username, password, local_folder):
     try:
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(host, username=username, password=password)
-
-        sftp = client.open_sftp()
-
         # Create a temporary tar archive of the local folder
         tar_filename = 'archive.tar.gz'
         tar_path = os.path.join('/tmp', tar_filename)
         create_tar_archive(local_folder, tar_path)
 
-        # Upload the tar archive to the remote server
-        remote_folder = '/tmp'
-        sftp.put(tar_path, os.path.join(remote_folder, tar_filename))
-
-        sftp.close()
-        client.close()
-
-        return f'Success: {host}'
-
-    except paramiko.AuthenticationException:
-        return f'Authentication failed: {host}'
-
-    except paramiko.SSHException as e:
-        return f'Error occurred while establishing SSH connection with {host}: {str(e)}'
+        # Upload the tar archive to the remote servers in parallel
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = []
+            for host in hosts:
+                results.append(executor.submit(upload_file, host, username, password, tar_path, '/tmp'))
+            
+            # Process the results
+            for idx, result in enumerate(concurrent.futures.as_completed(results)):
+                host = hosts[idx]
+                if result.exception() is None:
+                    print(f'Success: {host}')
+                else:
+                    print(f'Error occurred while connecting to {host}: {str(result.exception())}')
 
     except Exception as e:
-        return f'Error occurred while connecting to {host}: {str(e)}'
+        print(f'Error occurred: {str(e)}')
 
 
 def create_tar_archive(local_folder, tar_path):
     with tarfile.open(tar_path, 'w:gz') as tar:
-        for root, _, files in os.walk(local_folder):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, local_folder)
-                tar.add(file_path, arcname=arcname)
+        tar.add(local_folder, arcname=os.path.basename(local_folder))
 
+
+def upload_file(host, username, password, local_path, remote_path):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(host, username=username, password=password)
+
+    sftp = client.open_sftp()
+    sftp.put(local_path, os.path.join(remote_path, os.path.basename(local_path)))
+    sftp.close()
+    client.close()
 
 def main():
-    # SSH login credentials
+    # Example usage
+    hosts = ['example1.com', 'example2.com', 'example3.com', 'example4.com', 'example5.com']
     username = 'your_username'
     password = 'your_password'
+    local_folder_path = 'path_to_local_folder'
 
-    # Local folder to upload
-    local_folder = 'C:/path/to/local/folder'
+    # Ensure the local_folder_path ends with '/'
+    if not local_folder_path.endswith('/'):
+        local_folder_path += '/'
 
-    # Read servers from file
-    with open('servers.txt', 'r') as file:
-        servers = [line.strip() for line in file]
+    scp_upload(hosts, username, password, local_folder_path)
 
-    # Parallel mode (maximum 5 concurrent transfers)
-    concurrency = 5
-
-    with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        futures = []
-        for host in servers:
-            future = executor.submit(scp_upload, host, username, password, local_folder)
-            futures.append(future)
-
-        for future in futures:
-            result = future.result()
-            print(result)
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

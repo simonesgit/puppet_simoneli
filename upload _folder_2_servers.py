@@ -1,7 +1,6 @@
 import paramiko
 import os
 import tarfile
-from stat import S_ISDIR
 from concurrent.futures import ThreadPoolExecutor
 
 def scp_upload(host, username, password, local_folder):
@@ -21,12 +20,6 @@ def scp_upload(host, username, password, local_folder):
         remote_folder = '/tmp'
         sftp.put(tar_path, os.path.join(remote_folder, tar_filename))
 
-        # Extract the tar archive on the remote server
-        extract_tar_archive(sftp, os.path.join(remote_folder, tar_filename), remote_folder)
-
-        # Set global readable permissions on the remote folder and its sub-elements
-        set_global_readable(sftp, os.path.join(remote_folder, os.path.basename(local_folder.rstrip('/'))))
-
         sftp.close()
         client.close()
 
@@ -44,29 +37,11 @@ def scp_upload(host, username, password, local_folder):
 
 def create_tar_archive(local_folder, tar_path):
     with tarfile.open(tar_path, 'w:gz') as tar:
-        tar.add(local_folder, arcname=os.path.basename(local_folder))
-
-
-def extract_tar_archive(sftp, tar_path, remote_folder):
-    with tarfile.open(tar_path, 'r:gz') as tar:
-        tar.extractall(remote_folder)
-
-
-def remote_folder_exists(sftp, remote_folder):
-    try:
-        return S_ISDIR(sftp.stat(remote_folder).st_mode)
-    except FileNotFoundError:
-        return False
-
-
-def set_global_readable(sftp, remote_folder):
-    sftp.chmod(remote_folder, 0o755)  # Set folder permissions to 755
-    for item in sftp.listdir_attr(remote_folder):
-        path = remote_folder + '/' + item.filename
-        if S_ISDIR(item.st_mode):
-            set_global_readable(sftp, path)  # Recursively set permissions for sub-folders
-        else:
-            sftp.chmod(path, 0o644)  # Set file permissions to 644
+        for root, _, files in os.walk(local_folder):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, local_folder)
+                tar.add(file_path, arcname=arcname)
 
 
 def main():
@@ -75,10 +50,10 @@ def main():
     password = 'your_password'
 
     # Local folder to upload
-    local_folder = '/path/to/local/folder'
+    local_folder = 'C:/path/to/local/folder'
 
     # Read servers from file
-    with open('server.txt', 'r') as file:
+    with open('servers.txt', 'r') as file:
         servers = [line.strip() for line in file]
 
     # Parallel mode (maximum 5 concurrent transfers)

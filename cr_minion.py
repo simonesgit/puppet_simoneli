@@ -92,4 +92,22 @@ with open('comprehensive_report.csv', 'w', newline='', encoding='utf-8') as file
         approvals = row.pop('approvals')
         approval_status = {approval['approvalGroup']: approval['approvalStatus'] for approval in approvals}
         row['pendingApprovals'] = "\n".join([group for group, status in approval_status.items() if not status])
-        row['approvedGroups'] = "\n".join([group for group, status in approval_status.items()
+        row['approvedGroups'] = "\n".join([group for group, status in approval_status.items() if status == 'Approved'])
+        writer.writerow(row)
+
+# Write brief summary data to CSV
+with open('brief_summary_report.csv', 'w', newline='', encoding='utf-8') as file:
+    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'implementer', 'pendingApprovals', 'approvedGroups']
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(brief_summary_data)
+
+# Write raw responses to a text file
+with open('response_raw.txt', 'w', encoding='utf-8') as file:
+    for response in raw_responses:
+        file.write(json.dumps(response, indent=4, ensure_ascii=False))
+        file.write('\n')
+
+# Print brief summary to the screen in tabular format
+print("\nBrief Summary Report:")
+print_table(brief_summary_data)

@@ -40,7 +40,7 @@ def prepare_data(change_order_numbers):
             except Exception as exc:
                 print(f"{change_order} generated an exception: {exc}")
     # Sort raw responses by scheduleStartDate
-    raw_responses.sort(key=lambda x: datetime.strptime(x['scheduledStartDate'], '%Y-%m-%dT%H:%M:%S.%fZ') if 'scheduledStartDate' in x else datetime.min)
+    raw_responses.sort(key=lambda x: datetime.strptime(x['scheduledStartDate'], ("%Y-%m-%d %H:%M:%S")) if 'scheduledStartDate' in x else datetime.min)
 
 # Function to print table
 def print_table(data):

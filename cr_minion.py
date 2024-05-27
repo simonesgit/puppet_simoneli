@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 # Define the API URL pattern
-API_URL_PATTERN = "https://cp-mInion.uk.ccc/apl/v3/read?changeRequest={}&withChangeTasks=false&withPamTasks=false"
+API_URL_PATTERN = "https://cp-m.ccc/apl/v3/read?changeRequest={}&withChangeTasks=false&withPamTasks=false"
 
 # Read change order numbers from CSV file
 with open('change_orders.csv', 'r', encoding='utf-8') as file:

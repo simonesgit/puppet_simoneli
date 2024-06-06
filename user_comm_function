@@ -1,0 +1,35 @@
+import pandas as pd
+import shutil
+import os
+
+def create_mails(mail_list, remark):
+    # Read the CSV file
+    df = pd.read_csv(mail_list)
+    
+    # Define paths
+    template_path = os.path.join('.', 'user_comm_template.msg')
+    output_dir = os.path.join('.', 'user_comms')
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Iterate over each row in the DataFrame
+    for index, row in df.iterrows():
+        batch_id = row['batch']
+        addresses = row['address']
+        
+        # Create new filename
+        new_filename = f"user_comm_{remark}_{batch_id}.msg"
+        new_filepath = os.path.join(output_dir, new_filename)
+        
+        # Copy the template file to the new location
+        shutil.copy(template_path, new_filepath)
+        
+        # Open the copied file and amend the CC list
+        with open(new_filepath, 'a') as file:
+            file.write(f"\nCC: {addresses}")
+    
+    print("Emails created successfully.")
+
+# Example usage
+mail_list = './mail_list/aabb.csv'
+remark = "GSDE"
+create_mails(mail_list, remark)

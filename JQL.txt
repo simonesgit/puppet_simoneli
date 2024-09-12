@@ -1,0 +1,10 @@
+Epics which start date or end date is within <data_from> and <data_to>
+project = "AAA" AND
+((startdate >= "<data_from>" AND startdate <= "<data_to>") OR
+(enddate >= "<data_from>" AND enddate <= "<data_to>"))
+
+Epics not completed by their end date
+project = "AAA" AND resolution = Unresolved AND DUE < Now()
+
+Epics without a start/end date specified
+project = "AAA" AND (startdate = "" OR enddate = "")

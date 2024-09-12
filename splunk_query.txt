@@ -1,0 +1,13 @@
+## conver multiple env in unicorn
+| inputlookup index=unicorn
+| makeresults
+| eval hostname = case(count(hostname) > 1, "mix-", hostname)
+| eval environment = case(
+   isnull(environment), "NA",
+   count(environment) = 1, environment,
+   (environment contains "Production" AND environment contains "Contingency"), "mix-prod1",
+   (environment contains "Production" OR environment contains "Contingency"), "NA",
+   "mix-prod2"
+)  
+| deduplicate hostname
+| fields - count

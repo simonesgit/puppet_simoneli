@@ -8,10 +8,11 @@ from datetime import datetime
 base_url = "https://ctmapi.bmc.com:8441/automation-api"
 api_login = "/session/login"
 api_getdc = "/config/servers"
+api_logout = "/session/logout"
 fqdn_nodes = ["server_fqdn1", "server_fqdn2", "server_fqdn3"]
 username = "your_username"
 password = "your_password"
-num_requests = 10  # Number of POST requests to make per node
+num_requests = 10  # Number of GET requests to make per node
 
 # Results storage
 results = {}
@@ -24,8 +25,8 @@ def login_and_get_token():
     token = data.get("token")
     return token, response.status_code
 
-def post_to_getdc(node, token):
-    url = f"https://{node}:8441{api_getdc}"
+def get_dc(node, token):
+    url = f"https://{node}:8441/automation-api{api_getdc}"
     headers = {"Authorization": f"Bearer {token}"}
     response_times = []
     success_count = 0
@@ -36,7 +37,7 @@ def post_to_getdc(node, token):
 
     for _ in range(num_requests):
         start_time = time.time()
-        response = requests.post(url, headers=headers)
+        response = requests.get(url, headers=headers)
         end_time = time.time()
 
         response_time = (end_time - start_time) * 1000  # in milliseconds
@@ -67,6 +68,12 @@ def post_to_getdc(node, token):
             "end_node_time": end_node_time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
+def logout(token):
+    url = f"{base_url}{api_logout}"
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.post(url, headers=headers)
+    return response.status_code
+
 def main():
     start_time = datetime.now()
     token, login_status = login_and_get_token()
@@ -79,12 +86,15 @@ def main():
     
     threads = []
     for node in fqdn_nodes:
-        thread = threading.Thread(target=post_to_getdc, args=(node, token))
+        thread = threading.Thread(target=get_dc, args=(node, token))
         threads.append(thread)
         thread.start()
     
     for thread in threads:
         thread.join()
+
+    logout_status = logout(token)
+    print(f"Logout API Response: Status Code: {logout_status}")
 
     end_time = datetime.now()
     

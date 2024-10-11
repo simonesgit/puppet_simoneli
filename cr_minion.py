@@ -5,6 +5,8 @@ from tabulate import tabulate
 import textwrap
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+import webbrowser
+import os
 
 # Define the API URL pattern
 API_URL_PATTERN = "https://cp-m.ccc/apl/v3/read?changeRequest={}&withChangeTasks=false&withPamTasks=false"
@@ -78,6 +80,7 @@ for data in raw_responses:
             'status': result['status'],
             'summary': result['summary'],
             'scheduleStartDate': result['scheduledStartDate'],
+            'scheduledEndDate': result.get('scheduledEndDate', ''),
             'implementer': result['implementer'],
             'pendingApprovals': "\n".join(pending_approvals),
             'approvedGroups': "\n".join(approved_groups) if result['status'].lower() not in ['review', 'close', 'closed'] else ''
@@ -97,7 +100,7 @@ with open('comprehensive_report.csv', 'w', newline='', encoding='utf-8') as file
 
 # Write brief summary data to CSV
 with open('brief_summary_report.csv', 'w', newline='', encoding='utf-8') as file:
-    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'implementer', 'pendingApprovals', 'approvedGroups']
+    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'scheduledEndDate', 'implementer', 'pendingApprovals', 'approvedGroups']
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(brief_summary_data)
@@ -111,3 +114,72 @@ with open('response_raw.txt', 'w', encoding='utf-8') as file:
 # Print brief summary to the screen in tabular format
 print("\nBrief Summary Report:")
 print_table(brief_summary_data)
+
+# Read the data from the brief summary CSV and create an HTML file
+with open('brief_summary_report.csv', 'r', encoding='utf-8') as file:
+    reader = csv.DictReader(file)
+    rows = list(reader)
+
+html_content = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brief Summary Report</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Brief Summary Report</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Change Request</th>
+                <th>Status</th>
+                <th>Summary</th>
+                <th>Schedule Start Date</th>
+                <th>Implementer</th>
+                <th>Pending Approvals</th>
+                <th>Approved Groups</th>
+            </tr>
+        </thead>
+        <tbody>
+"""
+for row in rows:
+    html_content += f"""
+            <tr>
+                <td>{row['changeRequest']}</td>
+                <td>{row['status']}</td>
+                <td>{row['summary']}</td>
+                <td>{row['scheduleStartDate']}</td>
+                <td>{row['implementer']}</td>
+                <td>{row['pendingApprovals']}</td>
+                <td>{row['approvedGroups']}</td>
+            </tr>
+    """
+html_content += """
+        </tbody>
+    </table>
+</body>
+</html>
+"""
+
+# Write HTML content to file
+with open('brief_summary_report.html', 'w', encoding='utf-8') as file:
+    file.write(html_content)
+
+# Open the HTML file in the default web browser
+webbrowser.open('file://' + os.path.realpath('brief_summary_report.html'))

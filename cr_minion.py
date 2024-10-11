@@ -66,7 +66,7 @@ prepare_data(change_order_numbers)
 
 # Process raw_responses to comprehensive_data and brief_summary_data
 for data in raw_responses:
-    if data['status'] == 'success':
+    if data.get('statusCode') == 200:
         result = data  # Assuming the data is directly in the response, not under 'result'
         comprehensive_data.append(result)
         
@@ -152,9 +152,11 @@ html_content = """
                 <th>Status</th>
                 <th>Summary</th>
                 <th>Schedule Start Date</th>
+                <th>Scheduled End Date</th>
                 <th>Implementer</th>
                 <th>Pending Approvals</th>
                 <th>Approved Groups</th>
+                <th>Snow URL</th>
             </tr>
         </thead>
         <tbody>
@@ -166,9 +168,11 @@ for row in rows:
                 <td>{row['status']}</td>
                 <td>{row['summary']}</td>
                 <td>{row['scheduleStartDate']}</td>
+                <td>{row['scheduledEndDate']}</td>
                 <td>{row['implementer']}</td>
                 <td>{row['pendingApprovals']}</td>
                 <td>{row['approvedGroups']}</td>
+                <td>{row['snowURL']}</td>
             </tr>
     """
 html_content += """

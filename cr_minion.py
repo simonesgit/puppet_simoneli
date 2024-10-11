@@ -83,7 +83,8 @@ for data in raw_responses:
             'scheduledEndDate': result.get('scheduledEndDate', ''),
             'implementer': result['implementer'],
             'pendingApprovals': "\n".join(pending_approvals),
-            'approvedGroups': "\n".join(approved_groups) if result['status'].lower() not in ['review', 'close', 'closed'] else ''
+            'approvedGroups': "\n".join(approved_groups) if result['status'].lower() not in ['review', 'close', 'closed'] else '',
+            'snowURL': result.get('snowURL', '')
         })
 
 # Write comprehensive data to CSV
@@ -100,7 +101,7 @@ with open('comprehensive_report.csv', 'w', newline='', encoding='utf-8') as file
 
 # Write brief summary data to CSV
 with open('brief_summary_report.csv', 'w', newline='', encoding='utf-8') as file:
-    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'scheduledEndDate', 'implementer', 'pendingApprovals', 'approvedGroups']
+    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'scheduledEndDate', 'implementer', 'pendingApprovals', 'approvedGroups', 'snowURL']
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(brief_summary_data)

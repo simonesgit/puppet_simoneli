@@ -84,7 +84,7 @@ for data in raw_responses:
             'implementer': result['implementer'],
             'pendingApprovals': "\n".join(pending_approvals),
             'approvedGroups': "\n".join(approved_groups) if result['status'].lower() not in ['review', 'close', 'closed'] else '',
-            'snowURL': result.get('snowURL', '')
+            'snowUrl': result.get('snowUrl', '')
         })
 
 # Write comprehensive data to CSV
@@ -101,7 +101,7 @@ with open('comprehensive_report.csv', 'w', newline='', encoding='utf-8') as file
 
 # Write brief summary data to CSV
 with open('brief_summary_report.csv', 'w', newline='', encoding='utf-8') as file:
-    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'scheduledEndDate', 'implementer', 'pendingApprovals', 'approvedGroups', 'snowURL']
+    fieldnames = ['changeRequest', 'status', 'summary', 'scheduleStartDate', 'scheduledEndDate', 'implementer', 'pendingApprovals', 'approvedGroups', 'snowUrl']
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(brief_summary_data)
@@ -129,6 +129,9 @@ html_content = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brief Summary Report</title>
     <style>
+        body {
+            font-size: 0.9em;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -138,9 +141,19 @@ html_content = """
             padding: 8px;
             text-align: left;
             vertical-align: top;
+            white-space: nowrap;
+        }
+        td.summary {
+            max-width: 500px;
+            white-space: normal;
+            word-wrap: break-word;
         }
         th {
             background-color: #f2f2f2;
+        }
+        a {
+            text-decoration: none;
+            color: blue;
         }
     </style>
 </head>
@@ -163,17 +176,20 @@ html_content = """
         <tbody>
 """
 for row in rows:
+    pending_approvals_html = row['pendingApprovals'].replace('\n', '<br>')
+    approved_groups_html = row['approvedGroups'].replace('\n', '<br>')
+    snow_url_html = f"<a href='{row['snowUrl']}' target='_blank'>{row['snowUrl']}</a>"
     html_content += f"""
             <tr>
                 <td>{row['changeRequest']}</td>
                 <td>{row['status']}</td>
-                <td>{row['summary']}</td>
+                <td class="summary">{row['summary']}</td>
                 <td>{row['scheduleStartDate']}</td>
                 <td>{row['scheduledEndDate']}</td>
                 <td>{row['implementer']}</td>
-                <td>{row['pendingApprovals'].replace('\n', '<br>')}</td>
-                <td>{row['approvedGroups'].replace('\n', '<br>')}</td>
-                <td>{row['snowURL']}</td>
+                <td>{pending_approvals_html}</td>
+                <td>{approved_groups_html}</td>
+                <td>{snow_url_html}</td>
             </tr>
     """
 html_content += """

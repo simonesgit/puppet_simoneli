@@ -137,6 +137,7 @@ html_content = """
             border: 1px solid black;
             padding: 8px;
             text-align: left;
+            vertical-align: top;
         }
         th {
             background-color: #f2f2f2;
@@ -170,8 +171,8 @@ for row in rows:
                 <td>{row['scheduleStartDate']}</td>
                 <td>{row['scheduledEndDate']}</td>
                 <td>{row['implementer']}</td>
-                <td>{row['pendingApprovals']}</td>
-                <td>{row['approvedGroups']}</td>
+                <td>{row['pendingApprovals'].replace('\n', '<br>')}</td>
+                <td>{row['approvedGroups'].replace('\n', '<br>')}</td>
                 <td>{row['snowURL']}</td>
             </tr>
     """

@@ -110,6 +110,19 @@ def main():
               f"Total Response Time: {result['total_response_time']:.2f}ms, "
               f"Success: {result['success_count']}, Fail: {result['fail_count']}")
 
+    # Print results
+    for node in fqdn_nodes:
+        result = results[node]
+        print(f"\nServer Node: {node}")
+        print(f"Node Test Start Time: {result['start_node_time']}")
+        print(f"Node Test End Time: {result['end_node_time']}")
+        for idx, res in enumerate(result["responses"], start=1):
+            print(f"- Request {idx}: Status Code: {res['status_code']}, Response Time: {res['response_time']:.2f}ms")
+        print(f"- Average Response Time: {result['average_response_time']:.2f}ms")
+        print(f"- Total Response Time: {result['total_response_time']:.2f}ms")
+        print(f"- Success Count: {result['success_count']}")
+        print(f"- Fail Count: {result['fail_count']}")
+
     # Write raw results to file
     timestamp = start_time.strftime("%Y%m%d%H%M")
     with open(f"performance_test_raw_{timestamp}.txt", "w") as f:

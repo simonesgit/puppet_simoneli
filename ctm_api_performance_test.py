@@ -7,6 +7,7 @@ import webbrowser
 
 # Load environment profile
 env_profile = "HK_UAT.json"
+profile_name = env_profile.split('.')[0]
 
 with open(env_profile, 'r') as f:
     config = json.load(f)
@@ -152,9 +153,10 @@ def main():
         f.write("details pre { background-color: #f9f9f9; padding: 10px; border-radius: 5px; }")
         f.write("</style></head><body>")
         f.write(f"<h1>Control-M Automation API Performance Test Result</h1>")
+        f.write(f"<p><strong>Test AAPI Profile: {profile_name}</strong></p>")
+        f.write(f"<p><strong>Test AAPI end-point: {api_getdc}</strong></p>")
         f.write(f"<p>Test Start Time: {start_time}</p>")
-        f.write(f"<p>Test End Time: {end_time}</p>")
-        f.write(f"<p>Test AAPI end-point: {api_getdc}</p><hr>")
+        f.write(f"<p>Test End Time: {end_time}</p><hr>")
 
         f.write("<h2>Summary</h2>")
         f.write("<table><tr><th>Server Node</th><th>Average Response Time (ms)</th><th>Total Response Time (ms)</th>")

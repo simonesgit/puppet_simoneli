@@ -45,7 +45,8 @@ def get_dc(node, token):
         response_times.append(response_time)
         responses.append({
             "status_code": response.status_code,
-            "response_time": response_time
+            "response_time": response_time,
+            "response_json": response.json()
         })
 
         if response.status_code == 200:
@@ -109,19 +110,6 @@ def main():
               f"Total Response Time: {result['total_response_time']:.2f}ms, "
               f"Success: {result['success_count']}, Fail: {result['fail_count']}")
 
-    # Print results
-    for node in fqdn_nodes:
-        result = results[node]
-        print(f"\nServer Node: {node}")
-        print(f"Node Test Start Time: {result['start_node_time']}")
-        print(f"Node Test End Time: {result['end_node_time']}")
-        for idx, res in enumerate(result["responses"], start=1):
-            print(f"- Request {idx}: Status Code: {res['status_code']}, Response Time: {res['response_time']:.2f}ms")
-        print(f"- Average Response Time: {result['average_response_time']:.2f}ms")
-        print(f"- Total Response Time: {result['total_response_time']:.2f}ms")
-        print(f"- Success Count: {result['success_count']}")
-        print(f"- Fail Count: {result['fail_count']}")
-
     # Write raw results to file
     timestamp = start_time.strftime("%Y%m%d%H%M")
     with open(f"performance_test_raw_{timestamp}.txt", "w") as f:
@@ -138,6 +126,7 @@ def main():
         f.write("table { width: 100%; border-collapse: collapse; margin-top: 20px; }")
         f.write("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }")
         f.write("th { background-color: #f2f2f2; }")
+        f.write("details { margin-bottom: 10px; }")
         f.write("</style></head><body>")
         f.write(f"<h1>Control-M Automation API Performance Test Result</h1>")
         f.write(f"<p>Test Start Time: {start_time}</p>")
@@ -162,6 +151,9 @@ def main():
             f.write("<ul>")
             for idx, res in enumerate(result["responses"], start=1):
                 f.write(f"<li>Request {idx}: Status Code: {res['status_code']}, Response Time: {res['response_time']:.2f}ms</li>")
+                f.write("<details><summary>View Response JSON</summary>")
+                f.write(f"<pre>{json.dumps(res['response_json'], indent=4)}</pre>")
+                f.write("</details>")
             f.write("</ul>")
             f.write(f"<p>Average Response Time: {result['average_response_time']:.2f}ms</p>")
             f.write(f"<p>Total Response Time: {result['total_response_time']:.2f}ms</p>")

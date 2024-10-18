@@ -3,11 +3,12 @@ import json
 import threading
 import time
 from datetime import datetime
+import pytz
 import webbrowser
 
 # Load environment profile
 env_profile = "HK_UAT.json"
-profile_name = env_profile.split('.')[0]
+profile_name = env_profile.rstrip('.json')
 
 with open(env_profile, 'r') as f:
     config = json.load(f)
@@ -22,10 +23,23 @@ username = config.get("username") if config.get("username") else "your_username"
 password = config.get("password") if config.get("password") else "your_password"
 num_requests = config.get("num_requests", 10)
 ca_file = config.get("ca_file") if config.get("ca_file") else "HHHHTree.pem"
+timezone = config.get("timezone", "HKT")
+
+# Timezone conversion
+timezone_mapping = {
+    "HKT": "Asia/Hong_Kong",
+    "GBT": "Europe/London",
+    "CST": "America/Chicago"
+}
+
+local_tz = pytz.timezone(timezone_mapping.get(timezone, "UTC"))
 
 # Results storage
 results = {}
 lock = threading.Lock()
+
+def convert_to_local_time(utc_time):
+    return utc_time.astimezone(local_tz)
 
 def login_and_get_token():
     url = f"{base_url}{api_login}"
@@ -42,7 +56,7 @@ def get_dc(node, token):
     fail_count = 0
     responses = []
 
-    start_node_time = datetime.now()
+    start_node_time = datetime.now(pytz.utc)
 
     for _ in range(num_requests):
         start_time = time.time()
@@ -65,7 +79,7 @@ def get_dc(node, token):
     avg_response_time = sum(response_times) / len(response_times)
     total_response_time = sum(response_times)
 
-    end_node_time = datetime.now()
+    end_node_time = datetime.now(pytz.utc)
 
     with lock:
         results[node] = {
@@ -74,8 +88,8 @@ def get_dc(node, token):
             "total_response_time": total_response_time,
             "success_count": success_count,
             "fail_count": fail_count,
-            "start_node_time": start_node_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "end_node_time": end_node_time.strftime("%Y-%m-%d %H:%M:%S")
+            "start_node_time": convert_to_local_time(start_node_time).strftime("%Y-%m-%d %H:%M:%S %Z"),
+            "end_node_time": convert_to_local_time(end_node_time).strftime("%Y-%m-%d %H:%M:%S %Z")
         }
 
     print(f"Test completed for node: {node}")
@@ -87,7 +101,7 @@ def logout(token):
     return response.status_code
 
 def main():
-    start_time = datetime.now()
+    start_time = datetime.now(pytz.utc)
     token, login_status = login_and_get_token()
     
     if login_status != 200:
@@ -108,7 +122,7 @@ def main():
     logout_status = logout(token)
     print(f"Logout API Response: Status Code: {logout_status}")
 
-    end_time = datetime.now()
+    end_time = datetime.now(pytz.utc)
     
     # Summary
     print("\nSummary:")
@@ -155,8 +169,8 @@ def main():
         f.write(f"<h1>Control-M Automation API Performance Test Result</h1>")
         f.write(f"<p><strong>Test AAPI Profile: {profile_name}</strong></p>")
         f.write(f"<p><strong>Test AAPI end-point: {api_getdc}</strong></p>")
-        f.write(f"<p>Test Start Time: {start_time}</p>")
-        f.write(f"<p>Test End Time: {end_time}</p><hr>")
+        f.write(f"<p>Test Start Time: {convert_to_local_time(start_time).strftime('%Y-%m-%d %H:%M:%S %Z')}</p>")
+        f.write(f"<p>Test End Time: {convert_to_local_time(end_time).strftime('%Y-%m-%d %H:%M:%S %Z')}</p><hr>")
 
         f.write("<h2>Summary</h2>")
         f.write("<table><tr><th>Server Node</th><th>Average Response Time (ms)</th><th>Total Response Time (ms)</th>")

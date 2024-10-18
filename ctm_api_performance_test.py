@@ -3,17 +3,24 @@ import json
 import threading
 import time
 from datetime import datetime
+import webbrowser
 
-# Configuration
-base_url = "https://ctmapi.bmc.com:8441/automation-api"
-api_login = "/session/login"
-api_getdc = "/config/servers"
-api_logout = "/session/logout"
-fqdn_nodes = ["server_fqdn1", "server_fqdn2", "server_fqdn3"]
-username = "your_username"
-password = "your_password"
-num_requests = 10  # Number of GET requests to make per node
-ca_file = "HHHHTree.pem"  # CA file for SSL verification
+# Load environment profile
+env_profile = "HK_UAT.json"
+
+with open(env_profile, 'r') as f:
+    config = json.load(f)
+
+# Configuration from profile with inline conditional assignments
+base_url = config.get("base_url")
+api_login = config.get("api_login")
+api_getdc = config.get("api_getdc")
+api_logout = config.get("api_logout")
+fqdn_nodes = config.get("fqdn_nodes")
+username = config.get("username") if config.get("username") else "your_username"
+password = config.get("password") if config.get("password") else "your_password"
+num_requests = config.get("num_requests", 10)
+ca_file = config.get("ca_file") if config.get("ca_file") else "HHHHTree.pem"
 
 # Results storage
 results = {}
@@ -125,11 +132,13 @@ def main():
 
     # Write raw results to file
     timestamp = start_time.strftime("%Y%m%d%H%M")
+    report_filename = f"performance_test_report_{timestamp}.html"
+    
     with open(f"performance_test_raw_{timestamp}.txt", "w") as f:
         json.dump(results, f, indent=4)
 
     # Create HTML report
-    with open(f"performance_test_report_{timestamp}.html", "w") as f:
+    with open(report_filename, "w") as f:
         f.write("<!DOCTYPE html>")
         f.write("<html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>")
         f.write("<title>Control-M Automation API Performance Test Result</title><style>")
@@ -140,6 +149,7 @@ def main():
         f.write("th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }")
         f.write("th { background-color: #f2f2f2; }")
         f.write("details { margin-bottom: 10px; }")
+        f.write("details pre { background-color: #f9f9f9; padding: 10px; border-radius: 5px; }")
         f.write("</style></head><body>")
         f.write(f"<h1>Control-M Automation API Performance Test Result</h1>")
         f.write(f"<p>Test Start Time: {start_time}</p>")
@@ -163,8 +173,7 @@ def main():
             f.write(f"<p>Node Test End Time: {result['end_node_time']}</p>")
             f.write("<ul>")
             for idx, res in enumerate(result["responses"], start=1):
-                f.write(f"<li>Request {idx}: Status Code: {res['status_code']}, Response Time: {res['response_time']:.2f}ms</li>")
-                f.write("<details><summary>View Response JSON</summary>")
+                f.write(f"<details><summary>Request {idx}: Status Code: {res['status_code']}, Response Time: {res['response_time']:.2f}ms</summary>")
                 f.write(f"<pre>{json.dumps(res['response_json'], indent=4)}</pre>")
                 f.write("</details>")
             f.write("</ul>")
@@ -174,6 +183,9 @@ def main():
             f.write(f"<p>Fail Count: {result['fail_count']}</p><hr>")
         
         f.write("</body></html>")
+
+    # Open the HTML report in the default web browser
+    webbrowser.open(report_filename)
 
 if __name__ == "__main__":
     main()

@@ -43,10 +43,14 @@ def convert_to_local_time(utc_time):
 
 def login_and_get_token():
     url = f"{base_url}{api_login}"
-    response = requests.post(url, json={"username": username, "password": password}, verify=ca_file)
-    data = response.json()
-    token = data.get("token")
-    return token, response.status_code
+    try:
+        response = requests.post(url, json={"username": username, "password": password}, verify=ca_file)
+        data = response.json()
+        token = data.get("token")
+        return token, response.status_code
+    except requests.exceptions.RequestException as e:
+        print(f"Login failed: {e}")
+        return None, 500
 
 def get_dc(node, token):
     url = f"https://{node}:8441/automation-api{api_getdc}"
@@ -59,22 +63,32 @@ def get_dc(node, token):
     start_node_time = datetime.now(pytz.utc)
 
     for _ in range(num_requests):
-        start_time = time.time()
-        response = requests.get(url, headers=headers, verify=ca_file)
-        end_time = time.time()
+        try:
+            start_time = time.time()
+            response = requests.get(url, headers=headers, verify=ca_file)
+            end_time = time.time()
 
-        response_time = (end_time - start_time) * 1000  # in milliseconds
-        response_times.append(response_time)
-        responses.append({
-            "status_code": response.status_code,
-            "response_time": response_time,
-            "response_json": response.json()
-        })
+            response_time = (end_time - start_time) * 1000  # in milliseconds
+            response_times.append(response_time)
+            responses.append({
+                "status_code": response.status_code,
+                "response_time": response_time,
+                "response_json": response.json()
+            })
 
-        if response.status_code == 200:
-            success_count += 1
-        else:
+            if response.status_code == 200:
+                success_count += 1
+            else:
+                fail_count += 1
+
+        except requests.exceptions.RequestException as e:
+            response_times.append(0)
             fail_count += 1
+            responses.append({
+                "status_code": 500,
+                "response_time": 0,
+                "response_json": {"error": str(e)}
+            })
 
     avg_response_time = sum(response_times) / len(response_times)
     total_response_time = sum(response_times)
@@ -97,8 +111,12 @@ def get_dc(node, token):
 def logout(token):
     url = f"{base_url}{api_logout}"
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.post(url, headers=headers, verify=ca_file)
-    return response.status_code
+    try:
+        response = requests.post(url, headers=headers, verify=ca_file)
+        return response.status_code
+    except requests.exceptions.RequestException as e:
+        print(f"Logout failed: {e}")
+        return 500
 
 def main():
     start_time = datetime.now(pytz.utc)
@@ -132,24 +150,11 @@ def main():
               f"Total Response Time: {result['total_response_time']:.2f}ms, "
               f"Success: {result['success_count']}, Fail: {result['fail_count']}")
 
-    # Print results
-    for node in fqdn_nodes:
-        result = results[node]
-        print(f"\nServer Node: {node}")
-        print(f"Node Test Start Time: {result['start_node_time']}")
-        print(f"Node Test End Time: {result['end_node_time']}")
-        for idx, res in enumerate(result["responses"], start=1):
-            print(f"- Request {idx}: Status Code: {res['status_code']}, Response Time: {res['response_time']:.2f}ms")
-        print(f"- Average Response Time: {result['average_response_time']:.2f}ms")
-        print(f"- Total Response Time: {result['total_response_time']:.2f}ms")
-        print(f"- Success Count: {result['success_count']}")
-        print(f"- Fail Count: {result['fail_count']}")
-
     # Write raw results to file
     timestamp = start_time.strftime("%Y%m%d%H%M")
-    report_filename = f"performance_test_report_{timestamp}.html"
+    report_filename = f"{profile_name}_performance_test_report_{timestamp}.html"
     
-    with open(f"performance_test_raw_{timestamp}.txt", "w") as f:
+    with open(f"{profile_name}_performance_test_raw_{timestamp}.txt", "w") as f:
         json.dump(results, f, indent=4)
 
     # Create HTML report
